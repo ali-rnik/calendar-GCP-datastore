@@ -1,0 +1,42 @@
+<div class="container" id="header-img" style="background-color:; width:100%; height:300px">
+	<h1 class="topcentered"> Formula1 Statistics </h1> 
+	<img src="{{ url_for('static', filename='header-img.jpg') }}" alt="f1" width=100% height=300px> 
+
+	<div class="topleft" id="navbar" style="background-color:; width:580px; height:100px">
+		<div class="topnav">         
+			<a id="homepage" href="/" >Homepage</a>
+			<a id="query" href="/query" >Query</a>
+			<a id="compare" href='/compare' >Compare</a>
+			<a id="add-driver" href="/add/driver" >Add driver</a>
+			<a id="add-team" href="/add/team" >Add team</a>
+		</div>
+	</div>
+
+	<div class="topright" id="user-handler" style="background-color:; width:580px; height:100px">
+		<div class="topnav">
+			<a id="popup-firebase" href="#" onclick="makeVis()">Sign(in/up)</a>
+			<a id="user-info"> 
+				{% if claims %}
+				You are Logged in {{ claims['name'] }} 
+				{% endif %} </a>
+			<a id="sign-out" href="/" hidden="true" >Sign out</a>
+		</div>
+		<div id="firebase-auth-container" hidden="true"></div>
+	</div>
+</div>
+<div class="bottom" id="snackbar">
+	{% with messages = get_flashed_messages() %}
+	{% if messages %}
+	{% for message in messages %}
+	{{ message }}
+	{% endfor %}
+	{% endif %}
+	{% endwith %}
+</div>
+
+<div class="container" id="page-name" style="background-color:#FF8200; width:100%; height:50px">
+	{% if pagename %}
+	<h2>{{pagename}}</h2>
+	{% endif %}
+</div>
+

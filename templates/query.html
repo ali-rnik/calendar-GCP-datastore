@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+	{% include 'head.html' %}
+	<body>
+		{% include 'navbar.html' %}
+
+		<div class="container" id="query-menu">
+			<form action="/query" method="post">
+				<select name="query_key" id="query_key">
+					{% for elem in data.driver %}
+					<option value="driver.{{ elem }}"> driver.{{ elem }}</option>
+					{% endfor %}
+					{% for elem in data.team %}
+					<option value="team.{{ elem }}"> team.{{ elem }}</option>
+					{% endfor %}
+				</select>
+				Should Be bigger than: <input type="text" name="query_value"/><br/>
+				<input type="submit" name="button"/>
+			</form>
+		</div>
+		<div class="container">
+			{% if result %}
+			<p> Query on {{ kind }} and found {{ result|length }} items. </p>
+			<table style="width:100%">
+				<tr>
+					{% for colname in data[kind] %}
+					<th>{{colname}}</th>
+					{% endfor %}
+				</tr>
+				{% for mp in result %}
+				<tr>
+					<td><a href="/update/{{kind}}/{{mp['name']}}">{{ mp['name'] }} </a></td>
+					{% for i in range(1, data[kind]|length, 1) %}
+					<td>{{ mp[data[kind][i]] }} </td>
+					{% endfor %}
+				</tr>
+				{% endfor %}
+				{% endif %}
+			</table>
+		</div>
+	</body>
+</html>

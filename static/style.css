@@ -1,0 +1,82 @@
+body {
+	font-family: "helvetica", sans-serif;
+	text-align: center;
+}
+.container {
+	position: relative;
+} 
+
+.topright {
+	position: absolute;
+	top: 0;
+	right: 0;
+}
+
+.topleft {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+.topcentered {
+	position: absolute;
+	text-align: center; 
+	top: 0;
+	width:100%
+}
+.bottom {
+	bottom: 0;
+	position: absolute;
+	text-align: center;
+	color: LightGreen;
+	background-color: DarkOrange;
+	font-size: 45px;
+	width:100%
+
+}
+
+#snackbar {
+	height: 50px;
+	background-color: #009A44;
+	color: #000;
+	text-align: center;
+	position: fixed;
+	font-size: 25px;
+	width: 100%;
+}
+
+.topnav {
+	overflow: hidden;
+	background-color: #FF8200;
+	opacity: 0.6;
+}
+
+.topnav a {
+	float: left;
+	color: Black;
+	text-align: center;
+	padding: 14px 16px;
+	text-decoration: none;
+	font-size: 17px;
+}
+
+.topnav a:hover {
+	background-color: #009A44;
+	color: black;
+}
+
+.topnav a.active {
+	background-color: #04AA6D;
+	color: white;
+}
+
+table, th, td {
+	border:1px solid black;
+}
+
+#up {
+	background-color: lightgreen;
+}
+	
+#tie {
+	background-color: yellow;
+}
