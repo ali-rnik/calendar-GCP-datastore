@@ -1,18 +1,10 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-	{% include 'head.html' %}
-	<body>
-		{% include 'navbar.html' %}
-		<p> Welcome to Formula1 Website </p>
-		<p> In this Website you can query on formula1 drivers and teams and modify or even delete them from DB if you are authorized. </p>
-		<p> You can query on all drivers and teams without logging in but in order to able to modify them you should log in first. </p>
-		<p> To get Started lets add some drivers and teams by going to "Add driver" or "Add team" <br> 
-		pages and afterward you could query on them by going to "Query" page. </p>
-		<p> When your query is completed you can click on the name of drivers or teams and then you <br> 
-		routed to "Update" page and there you can modify or delete them. </p>
-		<p> There is another page that called  "Compare" and there you can compare  2 driver or 2 team with each other. </p>
-		<p> You can see your present working page (PWP) in the Orange Bar above these paragraphs </p>
-		<p> If there any informative message or alert from the server, you can check them in the green bar bottom of these paragraphs </p>
-	</body>
-</html>
+{% include 'head.html' %}
 
+<body>
+	{% include "navbar.html" %}
+	{% include "middle.html" %}
+</body>
+
+</html>

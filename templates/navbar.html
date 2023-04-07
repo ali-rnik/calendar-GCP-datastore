@@ -1,42 +1,28 @@
-<div class="container" id="header-img" style="background-color:; width:100%; height:300px">
-	<h1 class="topcentered"> Formula1 Statistics </h1> 
-	<img src="{{ url_for('static', filename='header-img.jpg') }}" alt="f1" width=100% height=300px> 
+<div class="container">
+    <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+        <a href="/"
+           class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+            <svg class="bi me-2" width="40" height="32">
+                <use xlink:href="#bootstrap" />
+            </svg>
+            <span class="fs-4">I Love Calendars</span>
+        </a>
+        <ul class="nav nav-pills">
+			<li class="nav-item">
+				<a class="nav-link"> {% if claims %} Hello {{ claims }}{% endif %} </a>
+			</li>
 
-	<div class="topleft" id="navbar" style="background-color:; width:580px; height:100px">
-		<div class="topnav">         
-			<a id="homepage" href="/" >Homepage</a>
-			<a id="query" href="/query" >Query</a>
-			<a id="compare" href='/compare' >Compare</a>
-			<a id="add-driver" href="/add/driver" >Add driver</a>
-			<a id="add-team" href="/add/team" >Add team</a>
-		</div>
-	</div>
+            <li class="nav-item" hidden="true" id="sign-out">
+                <a class="nav-link active" href="/"> Sign-out </a>
+            </li>
 
-	<div class="topright" id="user-handler" style="background-color:; width:580px; height:100px">
-		<div class="topnav">
-			<a id="popup-firebase" href="#" onclick="makeVis()">Sign(in/up)</a>
-			<a id="user-info"> 
-				{% if claims %}
-				You are Logged in {{ claims['name'] }} 
-				{% endif %} </a>
-			<a id="sign-out" href="/" hidden="true" >Sign out</a>
-		</div>
-		<div id="firebase-auth-container" hidden="true"></div>
-	</div>
+            <li class="nav-item" hidden="false" id="popup-firebase">
+                <a href="#"
+                   onclick="makeVis()"
+                   class="nav-link active"
+                   aria-current="page">Login/SignUp</a>
+            </li>
+			<div id="firebase-auth-container" hidden="true"></div>
+        </ul>
+    </header>
 </div>
-<div class="bottom" id="snackbar">
-	{% with messages = get_flashed_messages() %}
-	{% if messages %}
-	{% for message in messages %}
-	{{ message }}
-	{% endfor %}
-	{% endif %}
-	{% endwith %}
-</div>
-
-<div class="container" id="page-name" style="background-color:#FF8200; width:100%; height:50px">
-	{% if pagename %}
-	<h2>{{pagename}}</h2>
-	{% endif %}
-</div>
-

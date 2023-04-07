@@ -15,7 +15,6 @@ window.addEventListener('load', function () {
 	firebase.auth().onAuthStateChanged(function(user) {
 		if(user) {
 			document.getElementById('sign-out').hidden = false;
-			document.getElementById('user-info').hidden = false;
 			document.getElementById('popup-firebase').hidden = true;
 			user.getIdToken().then(function(token) {
 				document.cookie = "token=" + token + ";path=/";
@@ -24,7 +23,6 @@ window.addEventListener('load', function () {
 			var ui = new firebaseui.auth.AuthUI(firebase.auth());
 			ui.start('#firebase-auth-container', uiConfig);
 			document.getElementById('sign-out').hidden = true;
-			document.getElementById('user-info').hidden = true;
 			document.getElementById('popup-firebase').hidden = false;
 
 			document.cookie = "token=;path=/";
@@ -45,5 +43,3 @@ function snackbar() {
 	x.className = "show";
 	setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
 }
-
-

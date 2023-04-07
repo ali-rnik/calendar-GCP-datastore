@@ -1,7 +1,9 @@
 import google.oauth2.id_token
 from google.cloud import datastore
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash, make_response
 from google.auth.transport import requests
+import datetime, calendar
+from collections import Counter
 
 app = Flask(__name__, static_url_path="/templates")
 
@@ -12,7 +14,194 @@ app.config["SESSION_PERMANENT"] = False
 datastore_client = datastore.Client()
 firebase_request_adapter = requests.Request()
 
-driver_att = [
+week_days_name = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+user_att = [
+		"name",
+		"shared_me",
+		]
+cal_att = [
+		# key = name+owner
+		"name", 
+		"owner",
+		"shared",
+		]
+event_att = [
+		# key = name+cal+creator
+		"name",
+		"creator",
+		"start_date",
+		"end_date",
+		"notes",
+		"cal_and_user",
+		]
+
+att_list = {"user": user_att, "cal": cal_att, "event": event_att}
+
+def create_row_from_data(kind, name, data):
+	key = datastore_client.key(kind, name)
+	entity = datastore.Entity(key)
+	entity.update(data)
+	datastore_client.put(entity)
+
+def retrieve_row(kind, name):
+	key = datastore_client.key(kind, name)
+	result = datastore_client.get(key)
+	if result == None:
+		return None
+
+	return result.copy()
+
+
+def create_cal_for_user(user, calname, shared_list):
+	if retrieve_row("cal", user+calname) != None:
+		print("error! calendar exists!")
+		return False
+	create_row_from_data("cal", user+calname, {"name": calname, "owner": user, "shared":{}})
+
+def add_user_if_not_added(claims):
+	if retrieve_row("user", claims) != None:
+		return
+	create_row_from_data("user", claims, {"name": claims, "shared_me": ""})
+	if create_cal_for_user(claims, "personal calendar", "") != True:
+		print("error ! cannot create personal calendar")
+	
+	return
+
+def get_session_info():
+	id_token = request.cookies.get("token")
+	claims = None
+	err_msg = None
+
+	if id_token:
+		try:
+			claims = google.oauth2.id_token.verify_firebase_token(
+				id_token, firebase_request_adapter
+			)
+		except ValueError as exc:
+			err_msg = str(exc)
+			return flash_redirect(err_msg, "/error")
+		add_user_if_not_added(claims['email'].split('@')[0])
+		return claims['email'].split('@')[0]
+	return None
+
+
+def get_week(day):
+	week_days = []
+	dominant_month = []
+	start = day - datetime.timedelta(days=day.weekday())
+	end = start + datetime.timedelta(days=6)
+
+	for wday in range(7):
+		d = start + datetime.timedelta(days=wday)
+		dominant_month.append(d.month)
+		week_days.append(
+			{
+				"day": d.day,
+				"month": d.month,
+				"year": d.year,
+				"weekday": week_days_name[d.weekday()],
+			}
+		)
+
+	dominant_month = Counter(dominant_month).most_common(1)[0][0]
+	#print(week_days, dominant_month)
+	return (week_days, calendar.month_name[dominant_month])
+
+def get_my_cals(user):
+	result = query_result('owner', "=", user, 'cal')
+	return result
+
+def query_result(key, comp, val, kind):
+	if key == '' or comp == '' or kind == '':
+		return [None]
+	query = datastore_client.query(kind=kind)
+	query.add_filter(key, comp, val)
+	result = list(query.fetch())
+	
+	if result == []:
+		return [None]
+	result_list = []
+	for item in result:
+		result_list.append(item.copy())
+
+	return result_list
+
+def get_and_set_cal_week():
+	day = request.args.get("day")
+	offset = request.args.get("offset")
+	if offset == None:
+		offset = 0
+	today = datetime.date.today()
+
+	if day == None:
+		day = request.cookies.get('selected_date')
+		if day == None:
+			day = today
+		else:
+			day = datetime.datetime.strptime(day, "%d-%m-%Y").date()
+	else:
+		if day == "today":
+			day = today
+		else:
+			day = datetime.datetime.strptime(day, "%d-%m-%Y").date()
+
+	new_date = day + datetime.timedelta(days=int(offset))
+	week_info, dominant_month = get_week(new_date)
+
+	return week_info, new_date.strftime('%d-%m-%Y'), today, dominant_month
+
+def projection_on(kind, prop):
+	query = datastore_client.query(kind=kind)
+	query.projection = [prop]
+	prop_list = []
+
+	for p in query.fetch():
+		prop_list.append(p[prop])
+
+	return prop_list
+
+@app.route("/", methods=["GET", "POST"])
+def root():
+	claims = get_session_info()
+
+	if not claims:
+		return render_template(
+			"index.html",
+			is_logged_in=False,
+			pagename="Homepage",
+		)
+
+	my_cals = get_my_cals(claims)
+	#my_cals_active = 
+	print(my_cals)
+
+	user_list = projection_on("user", "name");
+	print(user_list)
+
+	week_info, selected_date, today, dominant_month = get_and_set_cal_week();
+	temp = render_template(
+		"index.html",
+		today=today,
+		wi=week_info,
+		dominant_month=dominant_month,
+		claims=claims,
+		is_logged_in=True,
+		pagename="Homepage",
+		my_cals=my_cals,
+		user_list=user_list,
+	)
+
+	resp = make_response(temp)
+	resp.set_cookie('selected_date', selected_date)
+
+	return resp
+
+if __name__ == "__main__":
+	app.run(host="0.0.0.0", port=8080, debug=True)
+
+
+""" driver_att = [
 		"name",
 		"age",
 		"pole-position",
@@ -280,3 +469,4 @@ def root():
 
 if __name__ == "__main__":
 	app.run(host="0.0.0.0", port=8080, debug=True)
+ """

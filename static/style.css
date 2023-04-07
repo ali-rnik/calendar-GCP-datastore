@@ -2,9 +2,6 @@ body {
 	font-family: "helvetica", sans-serif;
 	text-align: center;
 }
-.container {
-	position: relative;
-} 
 
 .topright {
 	position: absolute;
@@ -17,12 +14,14 @@ body {
 	top: 0;
 	left: 0;
 }
+
 .topcentered {
 	position: absolute;
-	text-align: center; 
+	text-align: center;
 	top: 0;
-	width:100%
+	width: 100%
 }
+
 .bottom {
 	bottom: 0;
 	position: absolute;
@@ -30,8 +29,7 @@ body {
 	color: LightGreen;
 	background-color: DarkOrange;
 	font-size: 45px;
-	width:100%
-
+	width: 100%
 }
 
 #snackbar {
@@ -69,14 +67,39 @@ body {
 	color: white;
 }
 
-table, th, td {
-	border:1px solid black;
-}
-
 #up {
 	background-color: lightgreen;
 }
-	
+
 #tie {
 	background-color: yellow;
+}
+
+.fixed_header {
+	width: 100%;
+	table-layout: fixed;
+	border-collapse: collapse;
+}
+
+.fixed_header tbody {
+	display: block;
+	width: 100%;
+	overflow: auto;
+	height: 500px;
+}
+
+.fixed_header thead tr {
+	display: block;
+}
+
+.fixed_header thead {
+	background: black;
+	color: #fff;
+}
+
+.fixed_header th,
+.fixed_header td {
+	padding: 5px;
+	text-align: left;
+	width: 200px;
 }

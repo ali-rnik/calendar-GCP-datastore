@@ -1,0 +1,22 @@
+<form id="add_cal" method="get" action="/" hidden="true">
+    <div class="mb-3 input-group input-group-sm">
+        <label for="name" class="form-label">Calendar Name</label>
+        <input type="text" class="form-control " id="calname" value="" name="calname">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Share With</label>
+    </div>
+    {% for user in user_list %}
+        <div class="mb-3 form-check form-check-inline">
+            <input type="checkbox"
+                   class="form-check-input"
+                   id="{{ user }}"
+                   value="{{ user }}"
+                   name="{{ user }}">
+            <label class="form-check-label" for="{{ user }}">{{ user }}</label>
+        </div>
+    {% endfor %}
+    <input class="float-center btn btn-warning"
+           type="submit"
+           value="Add Calendar">
+</form>

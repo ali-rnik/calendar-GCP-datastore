@@ -1,0 +1,17 @@
+{% if not is_logged_in %}
+    <div class="container" aria-hidden="true">
+        <p>Please login to get the most features!</p>
+    </div>
+{% else %}
+    <div class="container-fluid" aria-hidden="true">
+        <div class="container-fluid pb-3">
+            <div class="d-grid gap-4" style="grid-template-columns: 1fr 1fr 2fr;">
+                <div class="bg-light border rounded-3">{% include "cal_list.html" %}</div>
+                <div class="bg-light border rounded-3">
+                    {% include "add_calendar.html"%}
+                </div>
+                <div class="bg-light border rounded-3">{% include "calendar.html" %}</div>
+            </div>
+        </div>
+    </div>
+{% endif %}
