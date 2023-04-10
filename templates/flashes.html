@@ -1,0 +1,11 @@
+<footer class=" footer mt-auto py-3">
+  <div class="container bg-warning">
+    {% with messages = get_flashed_messages() %}
+	{% if messages %}
+	{% for message in messages %}
+	<span class="rounded-pill"> {{ message }} </span>
+	{% endfor %}
+	{% endif %}
+	{% endwith %}
+  </div>
+</footer>

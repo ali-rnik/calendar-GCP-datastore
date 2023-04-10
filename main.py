@@ -2,7 +2,7 @@ import google.oauth2.id_token
 from google.cloud import datastore
 from flask import Flask, render_template, request, redirect, flash, make_response
 from google.auth.transport import requests
-import datetime, calendar
+import datetime, calendar, time
 from collections import Counter
 
 app = Flask(__name__, static_url_path="/templates")
@@ -15,190 +15,447 @@ datastore_client = datastore.Client()
 firebase_request_adapter = requests.Request()
 
 week_days_name = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+hours = [
+    "00:00",
+    "00:30",
+    "01:00",
+    "01:30",
+    "02:00",
+    "02:30",
+    "03:00",
+    "03:30",
+    "04:00",
+    "04:30",
+    "05:00",
+    "05:30",
+    "06:00",
+    "06:30",
+    "07:00",
+    "07:30",
+    "08:00",
+    "08:30",
+    "09:00",
+    "09:30",
+    "10:00",
+    "10:30",
+    "11:00",
+    "11:30",
+    "12:00",
+    "12:30",
+    "13:00",
+    "13:30",
+    "14:00",
+    "14:30",
+    "15:00",
+    "15:30",
+    "16:00",
+    "16:30",
+    "17:00",
+    "17:30",
+    "18:00",
+    "18:30",
+    "19:00",
+    "19:30",
+    "20:00",
+    "20:30",
+    "21:00",
+    "21:30",
+    "22:00",
+    "22:30",
+    "23:00",
+    "23:30",
+]
 
 user_att = [
-		"name",
-		"shared_me",
-		]
+    "name",
+    "shared_me",
+]
 cal_att = [
-		# key = name+owner
-		"name", 
-		"owner",
-		"shared",
-		]
+    # key = name+owner
+    "name",
+    "owner",
+    "shared",
+]
 event_att = [
-		# key = name+cal+creator
-		"name",
-		"creator",
-		"start_date",
-		"end_date",
-		"notes",
-		"cal_and_user",
-		]
+    # key = name+cal+creator
+    "name",
+    "creator",
+    "start_date",
+    "end_date",
+    "notes",
+    "cal",
+    "user",
+]
 
 att_list = {"user": user_att, "cal": cal_att, "event": event_att}
 
+
+def flash_redirect(message, path):
+    flash(message)
+    return redirect(path)
+
+
 def create_row_from_data(kind, name, data):
-	key = datastore_client.key(kind, name)
-	entity = datastore.Entity(key)
-	entity.update(data)
-	datastore_client.put(entity)
+    key = datastore_client.key(kind, name)
+    entity = datastore.Entity(key)
+    entity.update(data)
+    datastore_client.put(entity)
+
 
 def retrieve_row(kind, name):
-	key = datastore_client.key(kind, name)
-	result = datastore_client.get(key)
-	if result == None:
-		return None
+    key = datastore_client.key(kind, name)
+    result = datastore_client.get(key)
+    if result == None:
+        return None
 
-	return result.copy()
+    return result.copy()
 
 
 def create_cal_for_user(user, calname, shared_list):
-	if retrieve_row("cal", user+calname) != None:
-		print("error! calendar exists!")
-		return False
-	create_row_from_data("cal", user+calname, {"name": calname, "owner": user, "shared":{}})
+    if retrieve_row("cal", user + calname) != None:
+        print("error! calendar exists!")
+        return False
+    create_row_from_data(
+        "cal", user + calname, {"name": calname, "owner": user, "shared": {}}
+    )
+
 
 def add_user_if_not_added(claims):
-	if retrieve_row("user", claims) != None:
-		return
-	create_row_from_data("user", claims, {"name": claims, "shared_me": ""})
-	if create_cal_for_user(claims, "personal calendar", "") != True:
-		print("error ! cannot create personal calendar")
-	
-	return
+    if retrieve_row("user", claims) != None:
+        return
+    create_row_from_data("user", claims, {"name": claims, "shared_me": ""})
+    if create_cal_for_user(claims, "personal calendar", "") != True:
+        print("error ! cannot create personal calendar")
+    return
+
 
 def get_session_info():
-	id_token = request.cookies.get("token")
-	claims = None
-	err_msg = None
+    id_token = request.cookies.get("token")
+    claims = None
+    err_msg = None
 
-	if id_token:
-		try:
-			claims = google.oauth2.id_token.verify_firebase_token(
-				id_token, firebase_request_adapter
-			)
-		except ValueError as exc:
-			err_msg = str(exc)
-			return flash_redirect(err_msg, "/error")
-		add_user_if_not_added(claims['email'].split('@')[0])
-		return claims['email'].split('@')[0]
-	return None
+    if id_token:
+        try:
+            claims = google.oauth2.id_token.verify_firebase_token(
+                id_token, firebase_request_adapter
+            )
+        except ValueError as exc:
+            err_msg = str(exc)
+            return flash_redirect(err_msg, "/error")
+        add_user_if_not_added(claims["email"].split("@")[0])
+        return claims["email"].split("@")[0]
+    return None
 
 
 def get_week(day):
-	week_days = []
-	dominant_month = []
-	start = day - datetime.timedelta(days=day.weekday())
-	end = start + datetime.timedelta(days=6)
+    week_days = []
+    dominant_month = []
+    start = day - datetime.timedelta(days=day.weekday())
+    end = start + datetime.timedelta(days=6)
 
-	for wday in range(7):
-		d = start + datetime.timedelta(days=wday)
-		dominant_month.append(d.month)
-		week_days.append(
-			{
-				"day": d.day,
-				"month": d.month,
-				"year": d.year,
-				"weekday": week_days_name[d.weekday()],
-			}
-		)
+    for wday in range(7):
+        d = start + datetime.timedelta(days=wday)
+        dominant_month.append(d.month)
+        week_days.append(
+            {
+                "day": d.day,
+                "month": d.month,
+                "year": d.year,
+                "weekday": week_days_name[d.weekday()],
+            }
+        )
 
-	dominant_month = Counter(dominant_month).most_common(1)[0][0]
-	#print(week_days, dominant_month)
-	return (week_days, calendar.month_name[dominant_month])
+    dominant_month = Counter(dominant_month).most_common(1)[0][0]
+    # print(week_days, dominant_month)
+    return (week_days, calendar.month_name[dominant_month])
+
 
 def get_my_cals(user):
-	result = query_result('owner', "=", user, 'cal')
-	return result
+    result = query_result("owner", "=", user, "cal")
+
+    result, selected = add_selected_field(result)
+
+    return result, selected
+
+
+def add_selected_field(result):
+    selected = {}
+    for k in request.args:
+        if k.startswith("selected-"):
+            selected[request.args.get(k)] = True
+
+    if selected == {} and request.args.get("cal_list_get") == None:
+        list_of_selected = request.cookies.get("selected_cals")
+        # print(list_of_selected)
+        if list_of_selected != None:
+            for i in list_of_selected.split(","):
+                selected[i] = True
+
+    # print(selected)
+    for r in result:
+        if selected.get(r["name"]) != None:
+            r["selected"] = "true"
+    return result, selected
+
 
 def query_result(key, comp, val, kind):
-	if key == '' or comp == '' or kind == '':
-		return [None]
-	query = datastore_client.query(kind=kind)
-	query.add_filter(key, comp, val)
-	result = list(query.fetch())
-	
-	if result == []:
-		return [None]
-	result_list = []
-	for item in result:
-		result_list.append(item.copy())
+    if key == "" or comp == "" or kind == "":
+        return [None]
+    query = datastore_client.query(kind=kind)
+    query.add_filter(key, comp, val)
+    result = list(query.fetch())
 
-	return result_list
+    if result == []:
+        return [None]
+    result_list = []
+    for item in result:
+        result_list.append(item.copy())
+
+    return result_list
+
 
 def get_and_set_cal_week():
-	day = request.args.get("day")
-	offset = request.args.get("offset")
-	if offset == None:
-		offset = 0
-	today = datetime.date.today()
+    day = request.args.get("day")
+    offset = request.args.get("offset")
+    if offset == None:
+        offset = 0
+    today = datetime.date.today()
 
-	if day == None:
-		day = request.cookies.get('selected_date')
-		if day == None:
-			day = today
-		else:
-			day = datetime.datetime.strptime(day, "%d-%m-%Y").date()
-	else:
-		if day == "today":
-			day = today
-		else:
-			day = datetime.datetime.strptime(day, "%d-%m-%Y").date()
+    if day == None:
+        day = request.cookies.get("selected_date")
+        if day == None:
+            day = today
+        else:
+            day = datetime.datetime.strptime(day, "%d-%m-%Y").date()
+    else:
+        if day == "today":
+            day = today
+        else:
+            day = datetime.datetime.strptime(day, "%d-%m-%Y").date()
 
-	new_date = day + datetime.timedelta(days=int(offset))
-	week_info, dominant_month = get_week(new_date)
+    new_date = day + datetime.timedelta(days=int(offset))
+    week_info, dominant_month = get_week(new_date)
 
-	return week_info, new_date.strftime('%d-%m-%Y'), today, dominant_month
+    return week_info, new_date.strftime("%d-%m-%Y"), today, dominant_month
+
 
 def projection_on(kind, prop):
-	query = datastore_client.query(kind=kind)
-	query.projection = [prop]
-	prop_list = []
+    query = datastore_client.query(kind=kind)
+    query.projection = [prop]
+    prop_list = []
 
-	for p in query.fetch():
-		prop_list.append(p[prop])
+    for p in query.fetch():
+        prop_list.append(p[prop])
 
-	return prop_list
+    return prop_list
+
+
+def add_calendar(claims):
+    calname = request.args.get("calname")
+    # print(calname)
+    if calname == None:
+        return False
+
+    if calname == "":
+        flash("Please Enter Calendar Name")
+        return False
+
+    if retrieve_row("cal", calname + claims) != None:
+        flash("Calendar Already Exist")
+        return False
+
+    shared_dic = {}
+    for r in request.args:
+        if r == "calname":
+            continue
+        shared_dic[request.args[r]] = request.args[r]
+
+    create_row_from_data(
+        "cal",
+        calname + claims,
+        {"name": calname, "owner": claims, "shared": shared_dic},
+    )
+    flash(
+        "Calendar Added Successfully.",
+    )
+
+
+def add_event(claims):
+    event_name = request.args.get("event_name")
+    start_date = request.args.get("start_date")
+    start_time = request.args.get("start_time")
+    end_date = request.args.get("end_date")
+    end_time = request.args.get("end_time")
+    calname = request.args.get("cal_name")
+    notes = request.args.get("notes")
+
+    if event_name == None:
+        return False
+
+    if len(event_name) > 9:
+        flash("Evenet name should be less than 9 character!")
+        return False
+
+    if (
+        event_name == ""
+        or start_date == ""
+        or end_date == ""
+        or calname == ""
+        or start_time == ""
+        or end_time == ""
+    ):
+        flash("Please Fill neccessary Fields!")
+        return False
+
+    if retrieve_row("event", event_name + calname + claims) != None:
+        flash("Event Exists! Choose different name!")
+        return False
+
+    start_date = datetime.datetime.strptime(
+        start_date + " " + start_time, "%Y-%m-%d %H:%M"
+    ).timetuple()
+    end_date = datetime.datetime.strptime(
+        end_date + " " + end_time, "%Y-%m-%d %H:%M"
+    ).timetuple()
+
+    print("start_date:", start_date)
+    print("end_date:", end_date)
+    if start_date > end_date:
+        flash("Start Date is later than End Date!")
+        return False
+
+    will_share = []
+
+    for r in request.args:
+        if r.startswith("user"):
+            will_share.append(request.args.get(r))
+
+    if len(will_share) == 0:
+        create_row_from_data(
+            "event",
+            event_name + calname + claims,
+            {
+                "name": event_name,
+                "creator": claims,
+                "start_date": time.mktime(start_date),
+                "end_date": time.mktime(end_date),
+                "notes": notes,
+                "cal": calname,
+                "user": claims,
+            },
+        )
+        flash("Event Added Successfully.")
+
+
+def fill_mat(my_cals, week_info, selected_cals):
+    color_list = ["Blue", "Red", "Yellow", "Green", "Purple"]
+    event_mat = {}
+    for hour in hours:
+        event_mat[hour] = {}
+        for wd in week_days_name:
+            event_mat[hour][wd] = {}
+            event_mat[hour][wd]["color"] = "None"
+            event_mat[hour][wd]["event_list"] = []
+
+    print(selected_cals)
+    print(week_info)
+
+    query = datastore_client.query(kind="event")
+
+    if selected_cals == []:
+        return
+    query.add_filter("cal", "IN", selected_cals)
+    result = list(query.fetch())
+    print(result)
+    print()
+    week_start = (
+        str(week_info[0]["year"])
+        + "-"
+        + str(week_info[0]["month"])
+        + "-"
+        + str(week_info[0]["day"])
+        + " "
+        + "00:00"
+    )
+    week_end = (
+        str(week_info[6]["year"])
+        + "-"
+        + str(week_info[6]["month"])
+        + "-"
+        + str(week_info[6]["day"])
+        + " "
+        + "23:30"
+    )
+    week_start = datetime.datetime.strptime(week_start, "%Y-%m-%d %H:%M")
+    week_end = datetime.datetime.strptime(week_end, "%Y-%m-%d %H:%M")
+
+    for event in result:
+        start_t = datetime.datetime.fromtimestamp(event["start_date"])
+        end_t = datetime.datetime.fromtimestamp(event["end_date"])
+        while start_t <= end_t:
+            if start_t >= week_start and start_t <= week_end:
+                weekday = week_days_name[start_t.weekday()]
+                clock = start_t.strftime("%H:%M")
+                event_mat[clock][weekday]["event_list"].append(event["name"])
+                event_mat[clock][weekday]["color"] = color_list[len(event_mat[clock][weekday]["event_list"])-1]
+            start_t += datetime.timedelta(minutes=30)
+    print(event_mat)
+    return event_mat
+
+
+@app.route("/error")
+def error():
+    return render_template("50x.html")
+
 
 @app.route("/", methods=["GET", "POST"])
 def root():
-	claims = get_session_info()
+    claims = get_session_info()
 
-	if not claims:
-		return render_template(
-			"index.html",
-			is_logged_in=False,
-			pagename="Homepage",
-		)
+    if not claims:
+        return render_template(
+            "index.html",
+            is_logged_in=False,
+            pagename="Homepage",
+        )
 
-	my_cals = get_my_cals(claims)
-	#my_cals_active = 
-	print(my_cals)
+    user_list = projection_on("user", "name")
+    # print(user_list)
 
-	user_list = projection_on("user", "name");
-	print(user_list)
+    add_calendar(claims)
+    add_event(claims)
+    my_cals, selected_cals = get_my_cals(claims)
 
-	week_info, selected_date, today, dominant_month = get_and_set_cal_week();
-	temp = render_template(
-		"index.html",
-		today=today,
-		wi=week_info,
-		dominant_month=dominant_month,
-		claims=claims,
-		is_logged_in=True,
-		pagename="Homepage",
-		my_cals=my_cals,
-		user_list=user_list,
-	)
+    week_info, selected_date, today, dominant_month = get_and_set_cal_week()
 
-	resp = make_response(temp)
-	resp.set_cookie('selected_date', selected_date)
+    # print("week info: ", week_info)
+    # print("my_cals: ", my_cals)
 
-	return resp
+    event_mat = fill_mat(my_cals, week_info, list(selected_cals.keys()))
+
+    temp = render_template(
+        "index.html",
+        today=today,
+        wi=week_info,
+        dominant_month=dominant_month,
+        claims=claims,
+        is_logged_in=True,
+        pagename="Homepage",
+        my_cals=my_cals,
+        user_list=user_list,
+        hours=hours,
+        event_mat=event_mat,
+    )
+
+    resp = make_response(temp)
+    resp.set_cookie("selected_date", selected_date)
+    resp.set_cookie("selected_cals", ",".join(list(selected_cals.keys())))
+
+    return resp
+
 
 if __name__ == "__main__":
-	app.run(host="0.0.0.0", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=8080, debug=True)
 
 
 """ driver_att = [

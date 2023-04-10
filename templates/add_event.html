@@ -1,0 +1,75 @@
+<form id="add_event" method="get" action="/" hidden="true">
+    <div class="mb-3 input-group input-group-sm">
+        <label for="name" class="form-label">Event Name</label>
+        <input type="text"
+               class="form-control "
+               id="event_name"
+               value=""
+               name="event_name">
+    </div>
+    <div class="mb-3 input-group input-group-sm">
+        <label for="name" class="form-label">Calendar</label>
+        <select type="text"
+                id="cal_name"
+                name="cal_name"
+                class="form-select form-select-sm mb-3"
+                >
+            {% for cal in my_cals %}<option value="{{ cal['name'] }}">{{ cal['name'] }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="mb-3 input-group input-group-sm">
+        <label for="name" class="form-label">Start Date</label>
+        <input type="date"
+               class="form-control "
+               id="start_date"
+               value=""
+               name="start_date">
+    </div>
+    <div class="mb-3 input-group input-group-sm">
+        <label for="name" class="form-label">Start Time</label>
+        <select type="text"
+                id="start_time"
+                name="start_time"
+                class="form-select form-select-sm mb-3"
+                >
+            {% for hour in hours %}<option value="{{ hour }}">{{ hour }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="mb-3 input-group input-group-sm">
+        <label for="name" class="form-label">End Date</label>
+        <input type="date"
+               class="form-control "
+               id="end_date"
+               value=""
+               name="end_date">
+    </div>
+    <div class="mb-3 input-group input-group-sm">
+        <label for="name" class="form-label">End Time</label>
+        <select type="text"
+                id="end_time"
+                name="end_time"
+                class="form-select form-select-sm mb-3">
+            {% for hour in hours %}<option value="{{ hour }}">{{ hour }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="mb-3 input-group input-group-sm">
+        <label for="name" class="form-label">Notes</label>
+        <input type="text" class="form-control " id="notes" value="" name="notes">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Share With (Optional)</label>
+    </div>
+    {% for user in user_list %}
+        {% if user != claims %}
+            <div class="mb-3 form-check form-check-inline">
+                <input type="checkbox"
+                       class="form-check-input"
+                       id="user---{{ loop.index }}"
+                       value="{{ user }}"
+                       name="user---{{ loop.index }}">
+                <label class="form-check-label" for="user---{{ loop.index }}">{{ user }}</label>
+            </div>
+        {% endif %}
+    {% endfor %}
+    <input class="float-center btn btn-warning" type="submit" value="Add Event">
+</form>

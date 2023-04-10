@@ -1,20 +1,26 @@
 <form id="add_cal" method="get" action="/" hidden="true">
     <div class="mb-3 input-group input-group-sm">
         <label for="name" class="form-label">Calendar Name</label>
-        <input type="text" class="form-control " id="calname" value="" name="calname">
+        <input type="text"
+               class="form-control "
+               id="calname"
+               value=""
+               name="calname">
     </div>
     <div class="mb-3">
-        <label class="form-label">Share With</label>
+        <label class="form-label">Share With (Optional)</label>
     </div>
     {% for user in user_list %}
+        {% if user != claims %}
         <div class="mb-3 form-check form-check-inline">
             <input type="checkbox"
                    class="form-check-input"
-                   id="{{ user }}"
+                   id="{{ loop.index }}"
                    value="{{ user }}"
-                   name="{{ user }}">
-            <label class="form-check-label" for="{{ user }}">{{ user }}</label>
+                   name="{{ loop.index }}">
+            <label class="form-check-label" for="{{ loop.index }}">{{ user }}</label>
         </div>
+        {%endif%}
     {% endfor %}
     <input class="float-center btn btn-warning"
            type="submit"
