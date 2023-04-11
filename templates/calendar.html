@@ -8,7 +8,7 @@
     <button class="btn btn-primary float-center"
             type="button"
             onclick="location.href = '/?day=today'">
-        Jump back today : {{ today.day }} {{ months[wi[today.weekday()]["month"]] }} {{ wi[today.weekday()]["weekday"] }} {{ wi[0]["year"] }}
+        Jump back today : {{ today.day }} {{ months[today.month-1] }} {{ wi[today.weekday()]["weekday"] }} {{ wi[0]["year"] }}
     </button>
     <button class="btn btn-primary float-end"
             type="button"
@@ -16,28 +16,44 @@
         NEXT Week
     </button>
 </div>
-<table class="table table-sm fixed_header">
-    <thead>
-        <tr>
-            <th class="th-sm" scope="col">Time</th>
-            {% for day in wi %}<th scope="col">{{ day["weekday"] }}-{{ day["day"] }}</th>{% endfor %}
-        </tr>
-    </thead>
-    <tbody>
-        {% for hour in hours %}
+<div class="overflow-scroll" style="height: 650px;">
+    <table class="table table-sm">
+        <thead class="sticky-top table-dark">
             <tr>
-                <th scope="row">{{ hour }}</th>
-                {% for day in wi %}
-                    <td scope="col">
-                        {% for event in event_mat[hour][day.weekday]["event_list"] %}
-                            <div>{{event}}</div>
-                        {% endfor %}
-                    </td>
-                {% endfor %}
+                <th class="th-sm" scope="col">Time</th>
+                {% for day in wi %}<th scope="col">{{ day["weekday"] }}-{{ day["day"] }}</th>{% endfor %}
             </tr>
-        {% endfor %}
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            {% for hour in hours %}
+                <tr>
+                    <th scope="row">{{ hour }}</th>
+                    {% for day in wi %}
+                        {% if event_mat %}
+                            <td class="{{ event_mat[hour][day.weekday]["color"] }}  bg-opacity-75"
+                                scope="col">
+                                {% for event in event_mat[hour][day.weekday]["event_list"] %}
+                                    <div>
+                                        <a class="text-black"
+                                           id="click_to_edit_{{ event["name"] }}"
+                                           href="#"
+                                           onclick="makeAllInvisExcept('sa_{{ event["name"] }}'); return false;">
+                                            {% if event["vis"] == "true" %}{{ event["name"] }}{% endif %}
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            </td>
+                        {% else %}
+                            <td scope="col">
+                                <div></div>
+                            </td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 <div class="float-center text-primary-emphasis bg-primary-subtle">
     Viewing: {{ dominant_month }} - {{ wi[0]["year"] }}
 </div>

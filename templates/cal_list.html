@@ -1,19 +1,21 @@
 <div class="list-group">
     <div class="float-start">
         <span>My Calendars</span>
-        <button class="btn btn-dark rounded-pill float-start"
-                onclick="getElementById('add_cal').hidden = false; getElementById('add_event').hidden = true">Add Cal</button>
-        <button class="btn btn-dark rounded-pill float-end"
-                onclick="getElementById('add_event').hidden = false; getElementById('add_cal').hidden = true;">Add Event</button>
+        <button id="sa_add_cal"
+                class="btn btn-dark rounded-pill float-start"
+                onclick="makeAllInvisExcept('sa_add_cal'); return false;">Add Cal</button>
+        <button id="sa_add_event"
+                class="btn btn-dark rounded-pill float-end"
+                onclick="makeAllInvisExcept('sa_add_event'); return false;">Add Event</button>
     </div>
     <form action="/" method="get">
         {% for cal in my_cals %}
             <label for class="list-group-item d-flex gap-2">
                 <input class="form-check-input flex-shrink-0 float-start"
                        type="checkbox"
-                       id="selected-{{loop.index}}"
-                       name="selected-{{loop.index}}"
-                       value="{{ cal['name']}}"
+                       id="selected-{{ loop.index }}"
+                       name="selected-{{ loop.index }}"
+                       value="{{ cal['name'] }}"
                        {% if cal["selected"] == "true" %}checked{% endif %}>
                 <span>{{ cal['name'] }}</span>
                 <div class="dropdown text-end float-end">
@@ -35,12 +37,12 @@
                 </div>
             </label>
         {% endfor %}
-        <input hidden="true",
-        type="checkbox"
-        id="cal_list_get"
-        name="cal_list_get"
-        value="cal_list_get"
-        checked>
+        <input hidden="true"
+               type="checkbox"
+               id="cal_list_get"
+               name="cal_list_get"
+               value="cal_list_get"
+               checked>
         <input class="float-center btn btn-warning" type="submit" value="apply">
     </form>
 </div>

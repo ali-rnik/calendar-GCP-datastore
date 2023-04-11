@@ -203,7 +203,12 @@ def query_result(key, comp, val, kind):
         return [None]
     query = datastore_client.query(kind=kind)
     query.add_filter(key, comp, val)
-    result = list(query.fetch())
+    fetched = query.fetch()
+    if fetched == None or fetched == []:
+        return [None]
+
+    print(fetched.num_results)
+    result = list(fetched)
 
     if result == []:
         return [None]
@@ -292,8 +297,8 @@ def add_event(claims):
     if event_name == None:
         return False
 
-    if len(event_name) > 9:
-        flash("Evenet name should be less than 9 character!")
+    if len(event_name) > 15:
+        flash("Evenet name should be less than 15 character!")
         return False
 
     if (
@@ -318,8 +323,6 @@ def add_event(claims):
         end_date + " " + end_time, "%Y-%m-%d %H:%M"
     ).timetuple()
 
-    print("start_date:", start_date)
-    print("end_date:", end_date)
     if start_date > end_date:
         flash("Start Date is later than End Date!")
         return False
@@ -346,9 +349,14 @@ def add_event(claims):
         )
         flash("Event Added Successfully.")
 
+    if len(will_share) > 0:
+        return
+
+
+
 
 def fill_mat(my_cals, week_info, selected_cals):
-    color_list = ["Blue", "Red", "Yellow", "Green", "Purple"]
+    color_list = ["bg-warning", "bg-info", "bg-danger", "big-primary", "bg-success", "bg-warning", "bg-info", "bg-success", "bg-danger", "big-primary"]
     event_mat = {}
     for hour in hours:
         event_mat[hour] = {}
@@ -389,19 +397,41 @@ def fill_mat(my_cals, week_info, selected_cals):
     week_start = datetime.datetime.strptime(week_start, "%Y-%m-%d %H:%M")
     week_end = datetime.datetime.strptime(week_end, "%Y-%m-%d %H:%M")
 
+
     for event in result:
         start_t = datetime.datetime.fromtimestamp(event["start_date"])
         end_t = datetime.datetime.fromtimestamp(event["end_date"])
+        event["start_date"] = start_t.strftime("%Y-%m-%d")
+        event["end_date"] = end_t.strftime("%Y-%m-%d")
+        event["start_time"] =  start_t.strftime("%H:%M")
+        event["end_time"] =  end_t.strftime("%H:%M")
+        visit = "true"
         while start_t <= end_t:
             if start_t >= week_start and start_t <= week_end:
                 weekday = week_days_name[start_t.weekday()]
                 clock = start_t.strftime("%H:%M")
-                event_mat[clock][weekday]["event_list"].append(event["name"])
+                event["vis"] = visit
+                event_mat[clock][weekday]["event_list"].append(event.copy())
                 event_mat[clock][weekday]["color"] = color_list[len(event_mat[clock][weekday]["event_list"])-1]
+            visit = "false"
             start_t += datetime.timedelta(minutes=30)
-    print(event_mat)
+
+    #print(event_mat)
     return event_mat
 
+def delete_event(claims):
+    if request.args.get("delete_event") == None:
+        return
+    
+    if request.args.get("user") != claims:
+        flash("You are not the creator of event but you can Unsubscribe!")
+        return
+    delete_row("event", request.args.get("event")+request.args.get("cal")+claims)
+    flash("Event Deleted Successfully")
+
+def delete_row(kind, name):
+	key = datastore_client.key(kind, name)
+	datastore_client.delete(key)
 
 @app.route("/error")
 def error():
@@ -419,6 +449,8 @@ def root():
             pagename="Homepage",
         )
 
+    delete_event(claims)
+
     user_list = projection_on("user", "name")
     # print(user_list)
 
@@ -432,6 +464,8 @@ def root():
     # print("my_cals: ", my_cals)
 
     event_mat = fill_mat(my_cals, week_info, list(selected_cals.keys()))
+
+  
 
     temp = render_template(
         "index.html",
@@ -458,7 +492,9 @@ if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)
 
 
-""" driver_att = [
+"""
+ 
+ driver_att = [
 		"name",
 		"age",
 		"pole-position",

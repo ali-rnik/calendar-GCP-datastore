@@ -43,3 +43,19 @@ function snackbar() {
 	x.className = "show";
 	setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
 }
+
+function makeAllInvisExcept(this_event) {
+	console.log("Making Invisssssssss")
+	var inputs = document.getElementsByTagName("FORM");
+	for(var i = 0; i < inputs.length; i++) {
+		if(inputs[i].id.indexOf('sa_') == 0) {
+			inputs[i].hidden = true;
+			console.log(inputs[i]+"became invis");
+		}
+		if(inputs[i].id == this_event) {
+			inputs[i].hidden = false;
+			console.log(inputs[i]+"became vis");
+		}
+	}
+	return;
+}
