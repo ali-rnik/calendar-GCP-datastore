@@ -1,4 +1,5 @@
 {% for cal in my_cals %}
+    {% if not cal["shared_me"] %}
     <form id="sa_edit_cal_{{ cal["name"] }}"
           method="get"
           action="/"
@@ -67,4 +68,5 @@
             </div>
         </div>
     </form>
+    {% endif %}
 {% endfor %}

@@ -112,18 +112,18 @@ def retrieve_row(kind, name):
 
 
 def create_cal_for_user(user, calname, shared_list):
-    if retrieve_row("cal", user +"_._" + calname) != None:
+    if retrieve_row("cal", user + "_._" + calname) != None:
         print("error! calendar exists!")
         return False
     create_row_from_data(
-        "cal", calname +"_._" + user, {"name": calname, "owner": user, "shared": {}}
+        "cal", calname + "_._" + user, {"name": calname, "owner": user, "shared": {}}
     )
 
 
 def add_user_if_not_added(claims):
     if retrieve_row("user", claims) != None:
         return
-    create_row_from_data("user", claims, {"name": claims, "shared_me": ""})
+    create_row_from_data("user", claims, {"name": claims, "shared_me": {}})
     if create_cal_for_user(claims, "personal calendar", "") != True:
         print("error ! cannot create personal calendar")
     return
@@ -172,14 +172,20 @@ def get_week(day):
 
 def get_my_cals(user):
     result = query_result("owner", "=", user, "cal")
+    shared_cals = get_shared_cals_list(user)
+    print("shared_cals ",shared_cals)
+    print("my_cals", result)
+    for item in shared_cals:
+        item["shared_me"] = "true"
+        result.append(item)
+
+    print("after changes my_cals", result)
 
     result, selected = add_selected_field(result)
-
     return result, selected
 
 
 def add_selected_field(result):
-    print(result)
     if result == [None]:
         return [], {}
     selected = {}
@@ -189,16 +195,25 @@ def add_selected_field(result):
 
     if selected == {} and request.args.get("cal_list_get") == None:
         list_of_selected = request.cookies.get("selected_cals")
-        # print(list_of_selected)
-        if list_of_selected != None:
+        if list_of_selected != None and list_of_selected != '':
             for i in list_of_selected.split(","):
                 selected[i] = True
 
-    # print(selected)
     for r in result:
         if selected.get(r["name"]) != None:
             r["selected"] = "true"
+    
     return result, selected
+
+def get_shared_cals_list(claims):
+    result = query_result("name", "=", claims, "user")[0]["shared_me"]
+    neat_list = []
+    for k, v in result.items():
+        if v == "yes":
+            spl = k.split("_._")
+            neat_list.append({"name": spl[0], "owner": spl[1]})
+    return neat_list
+
 
 
 def query_result(key, comp, val, kind):
@@ -210,7 +225,6 @@ def query_result(key, comp, val, kind):
     if fetched == None or fetched == []:
         return [None]
 
-    print(fetched.num_results)
     result = list(fetched)
 
     if result == []:
@@ -274,13 +288,34 @@ def add_calendar(claims):
             continue
         shared_dic[request.args[r]] = request.args[r]
 
-    if retrieve_row("cal", calname +"_._" + claims) != None:
+    if retrieve_row("cal", calname + "_._" + claims) != None:
         if request.args.get("edit_calendar") == "edit_calendar":
             create_row_from_data(
                 "cal",
-                calname +"_._" + claims,
+                calname + "_._" + claims,
                 {"name": calname, "owner": claims, "shared": shared_dic},
             )
+
+            query = datastore_client.query(kind="user")
+            result = list(query.fetch())
+            for res in result:
+                new_shared_me = {}
+                for k in res["shared_me"]:
+                    if k.endswith(claims):
+                        continue
+                    new_shared_me[k] = res["shared_me"][k]
+                res["shared_me"] = new_shared_me
+                create_row_from_data("user", res["name"], res)
+
+            for user in shared_dic:
+                result = query_result("name", "=", user, "user")[0]
+                result["shared_me"][calname + "_._" + claims] = "no"
+                create_row_from_data(
+                    "user",
+                    user,
+                    result,
+                )
+
             flash(
                 "Calendar edited Successfully.",
             )
@@ -290,9 +325,30 @@ def add_calendar(claims):
 
     create_row_from_data(
         "cal",
-        calname +"_._" + claims,
+        calname + "_._" + claims,
         {"name": calname, "owner": claims, "shared": shared_dic},
     )
+
+    query = datastore_client.query(kind="user")
+    result = list(query.fetch())
+    for res in result:
+        new_shared_me = {}
+        for k in res["shared_me"]:
+            if k.endswith(claims):
+                continue
+            new_shared_me[k] = res["shared_me"][k]
+        res["shared_me"] = new_shared_me
+        create_row_from_data("user", res["name"], res)
+
+    for user in shared_dic:
+        result = query_result("name", "=", user, "user")[0]
+        result["shared_me"][calname + "_._" + claims] = "no"
+        create_row_from_data(
+            "user",
+            user,
+            result,
+        )
+
     flash(
         "Calendar Added Successfully.",
     )
@@ -325,8 +381,6 @@ def add_event(claims):
         flash("Please Fill neccessary Fields!")
         return False
 
-
-
     start_date = datetime.datetime.strptime(
         start_date + " " + start_time, "%Y-%m-%d %H:%M"
     ).timetuple()
@@ -340,11 +394,11 @@ def add_event(claims):
         if r.startswith("user"):
             will_share.append(request.args.get(r))
 
-    if retrieve_row("event", event_name +"_._" + calname +"_._" + claims) != None:
+    if retrieve_row("event", event_name + "_._" + calname + "_._" + claims) != None:
         if request.args.get("edit_event") == "edit_event":
             create_row_from_data(
                 "event",
-                event_name +"_._" + calname +"_._" + claims,
+                event_name + "_._" + calname + "_._" + claims,
                 {
                     "name": event_name,
                     "creator": claims,
@@ -364,11 +418,10 @@ def add_event(claims):
         flash("Start Date is later than End Date!")
         return False
 
-
     if len(will_share) == 0:
         create_row_from_data(
             "event",
-            event_name +"_._" + calname +"_._" + claims,
+            event_name + "_._" + calname + "_._" + claims,
             {
                 "name": event_name,
                 "creator": claims,
@@ -407,17 +460,13 @@ def fill_mat(my_cals, week_info, selected_cals):
             event_mat[hour][wd]["color"] = "None"
             event_mat[hour][wd]["event_list"] = []
 
-    print(selected_cals)
-    print(week_info)
-
     query = datastore_client.query(kind="event")
 
     if selected_cals == []:
         return
     query.add_filter("cal", "IN", selected_cals)
     result = list(query.fetch())
-    print(result)
-    print()
+
     week_start = (
         str(week_info[0]["year"])
         + "-"
@@ -471,7 +520,7 @@ def delete_cal(claims):
         flash("You are not authorized to delete this calendar")
         return
 
-    delete_row("cal", request.args.get("cal")+ "_._" + claims)
+    delete_row("cal", request.args.get("cal") + "_._" + claims)
     flash("Calendar Deleted Successfully")
 
 
@@ -490,25 +539,25 @@ def delete_row(kind, name):
     key = datastore_client.key(kind, name)
     datastore_client.delete(key)
 
+
 @app.route("/<dec_or_acc>/<sharedby>/<calname>")
 def acc_or_dec_shared_cal(dec_or_acc, sharedby, calname):
     claims = get_session_info()
 
     result = query_result("name", "=", claims, "user")[0]
     if dec_or_acc == "accept":
-        result["shared_me"][calname+"_._"+sharedby] = "yes"    
+        result["shared_me"][calname + "_._" + sharedby] = "yes"
         create_row_from_data("user", claims, result)
         return flash_redirect("Now the calendar is shared with you", "/")
 
-    elif result["shared_me"].get(calname+"_._"+sharedby):
-        del result["shared_me"][calname+"_._"+sharedby]
+    elif result["shared_me"].get(calname + "_._" + sharedby):
+        del result["shared_me"][calname + "_._" + sharedby]
         create_row_from_data("user", claims, result)
 
         query = datastore_client.query(kind="cal")
         query.add_filter("owner", "=", sharedby)
         query.add_filter("name", "=", calname)
-        fetched = list(query.fetch())
-        print(fetched)
+        fetched = list(query.fetch())[0]
         if fetched == []:
             return flash_redirect("Declined Successfully", "/")
         del fetched["shared"][claims]
@@ -517,7 +566,6 @@ def acc_or_dec_shared_cal(dec_or_acc, sharedby, calname):
         return flash_redirect("Declined Successfully", "/")
     else:
         return flash_redirect("No result found", "/")
-
 
 
 @app.route("/error")
@@ -540,7 +588,6 @@ def root():
     delete_cal(claims)
 
     user_list = projection_on("user", "name")
-
 
     add_calendar(claims)
     add_event(claims)
@@ -570,7 +617,6 @@ def root():
         event_mat=event_mat,
     )
 
-
     resp = make_response(temp)
     resp.set_cookie("selected_date", selected_date)
     resp.set_cookie("selected_cals", ",".join(list(selected_cals.keys())))
@@ -583,7 +629,7 @@ if __name__ == "__main__":
 
 
 """
- 
+{ 
  driver_att = [
 		"name",
 		"age",
@@ -852,4 +898,5 @@ def root():
 
 if __name__ == "__main__":
 	app.run(host="0.0.0.0", port=8080, debug=True)
- """
+}   
+"""
