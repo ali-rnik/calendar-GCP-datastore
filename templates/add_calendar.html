@@ -1,6 +1,6 @@
 <form id="sa_add_cal" method="get" action="/" hidden="true">
     <div class="mb-3 input-group input-group-sm">
-        <label for="name" class="form-label">Calendar Name</label>
+        <label for="name" class="form-label">Calendar Name:</label>
         <input type="text"
                class="form-control "
                id="calname"
@@ -8,7 +8,7 @@
                name="calname">
     </div>
     <div class="mb-3">
-        <label class="form-label">Share With (Optional)</label>
+        <label class="form-label">Share With (Optional):</label>
     </div>
     {% for user in user_list %}
         {% if user != claims %}

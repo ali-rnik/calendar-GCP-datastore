@@ -112,11 +112,11 @@ def retrieve_row(kind, name):
 
 
 def create_cal_for_user(user, calname, shared_list):
-    if retrieve_row("cal", user + calname) != None:
+    if retrieve_row("cal", user +"_._" + calname) != None:
         print("error! calendar exists!")
         return False
     create_row_from_data(
-        "cal", user + calname, {"name": calname, "owner": user, "shared": {}}
+        "cal", calname +"_._" + user, {"name": calname, "owner": user, "shared": {}}
     )
 
 
@@ -179,6 +179,9 @@ def get_my_cals(user):
 
 
 def add_selected_field(result):
+    print(result)
+    if result == [None]:
+        return [], {}
     selected = {}
     for k in request.args:
         if k.startswith("selected-"):
@@ -265,19 +268,29 @@ def add_calendar(claims):
         flash("Please Enter Calendar Name")
         return False
 
-    if retrieve_row("cal", calname + claims) != None:
-        flash("Calendar Already Exist")
-        return False
-
     shared_dic = {}
     for r in request.args:
-        if r == "calname":
+        if r == "calname" or r == "edit_calendar":
             continue
         shared_dic[request.args[r]] = request.args[r]
 
+    if retrieve_row("cal", calname +"_._" + claims) != None:
+        if request.args.get("edit_calendar") == "edit_calendar":
+            create_row_from_data(
+                "cal",
+                calname +"_._" + claims,
+                {"name": calname, "owner": claims, "shared": shared_dic},
+            )
+            flash(
+                "Calendar edited Successfully.",
+            )
+            return
+        flash("Calendar Already Exist")
+        return False
+
     create_row_from_data(
         "cal",
-        calname + claims,
+        calname +"_._" + claims,
         {"name": calname, "owner": claims, "shared": shared_dic},
     )
     flash(
@@ -312,9 +325,7 @@ def add_event(claims):
         flash("Please Fill neccessary Fields!")
         return False
 
-    if retrieve_row("event", event_name + calname + claims) != None:
-        flash("Event Exists! Choose different name!")
-        return False
+
 
     start_date = datetime.datetime.strptime(
         start_date + " " + start_time, "%Y-%m-%d %H:%M"
@@ -323,20 +334,41 @@ def add_event(claims):
         end_date + " " + end_time, "%Y-%m-%d %H:%M"
     ).timetuple()
 
-    if start_date > end_date:
-        flash("Start Date is later than End Date!")
-        return False
-
     will_share = []
 
     for r in request.args:
         if r.startswith("user"):
             will_share.append(request.args.get(r))
 
+    if retrieve_row("event", event_name +"_._" + calname +"_._" + claims) != None:
+        if request.args.get("edit_event") == "edit_event":
+            create_row_from_data(
+                "event",
+                event_name +"_._" + calname +"_._" + claims,
+                {
+                    "name": event_name,
+                    "creator": claims,
+                    "start_date": time.mktime(start_date),
+                    "end_date": time.mktime(end_date),
+                    "notes": notes,
+                    "cal": calname,
+                    "user": claims,
+                },
+            )
+            flash("Event edited Successfully.")
+            return
+        flash("Event Exists! Choose different name!")
+        return False
+
+    if start_date > end_date:
+        flash("Start Date is later than End Date!")
+        return False
+
+
     if len(will_share) == 0:
         create_row_from_data(
             "event",
-            event_name + calname + claims,
+            event_name +"_._" + calname +"_._" + claims,
             {
                 "name": event_name,
                 "creator": claims,
@@ -350,13 +382,23 @@ def add_event(claims):
         flash("Event Added Successfully.")
 
     if len(will_share) > 0:
+        flash("Sharing not enabled yet")
         return
 
 
-
-
 def fill_mat(my_cals, week_info, selected_cals):
-    color_list = ["bg-warning", "bg-info", "bg-danger", "big-primary", "bg-success", "bg-warning", "bg-info", "bg-success", "bg-danger", "big-primary"]
+    color_list = [
+        "bg-warning",
+        "bg-info",
+        "bg-danger",
+        "big-primary",
+        "bg-success",
+        "bg-warning",
+        "bg-info",
+        "bg-success",
+        "bg-danger",
+        "big-primary",
+    ]
     event_mat = {}
     for hour in hours:
         event_mat[hour] = {}
@@ -397,14 +439,13 @@ def fill_mat(my_cals, week_info, selected_cals):
     week_start = datetime.datetime.strptime(week_start, "%Y-%m-%d %H:%M")
     week_end = datetime.datetime.strptime(week_end, "%Y-%m-%d %H:%M")
 
-
     for event in result:
         start_t = datetime.datetime.fromtimestamp(event["start_date"])
         end_t = datetime.datetime.fromtimestamp(event["end_date"])
         event["start_date"] = start_t.strftime("%Y-%m-%d")
         event["end_date"] = end_t.strftime("%Y-%m-%d")
-        event["start_time"] =  start_t.strftime("%H:%M")
-        event["end_time"] =  end_t.strftime("%H:%M")
+        event["start_time"] = start_t.strftime("%H:%M")
+        event["end_time"] = end_t.strftime("%H:%M")
         visit = "true"
         while start_t <= end_t:
             if start_t >= week_start and start_t <= week_end:
@@ -412,26 +453,72 @@ def fill_mat(my_cals, week_info, selected_cals):
                 clock = start_t.strftime("%H:%M")
                 event["vis"] = visit
                 event_mat[clock][weekday]["event_list"].append(event.copy())
-                event_mat[clock][weekday]["color"] = color_list[len(event_mat[clock][weekday]["event_list"])-1]
+                event_mat[clock][weekday]["color"] = color_list[
+                    len(event_mat[clock][weekday]["event_list"]) - 1
+                ]
             visit = "false"
             start_t += datetime.timedelta(minutes=30)
 
-    #print(event_mat)
+    # print(event_mat)
     return event_mat
+
+
+def delete_cal(claims):
+    if request.args.get("delete_cal") == None:
+        return
+
+    if request.args.get("owner") != claims:
+        flash("You are not authorized to delete this calendar")
+        return
+
+    delete_row("cal", request.args.get("cal")+ "_._" + claims)
+    flash("Calendar Deleted Successfully")
+
 
 def delete_event(claims):
     if request.args.get("delete_event") == None:
         return
-    
+
     if request.args.get("user") != claims:
         flash("You are not the creator of event but you can Unsubscribe!")
         return
-    delete_row("event", request.args.get("event")+request.args.get("cal")+claims)
+    delete_row("event", request.args.get("event") + request.args.get("cal") + claims)
     flash("Event Deleted Successfully")
 
+
 def delete_row(kind, name):
-	key = datastore_client.key(kind, name)
-	datastore_client.delete(key)
+    key = datastore_client.key(kind, name)
+    datastore_client.delete(key)
+
+@app.route("/<dec_or_acc>/<sharedby>/<calname>")
+def acc_or_dec_shared_cal(dec_or_acc, sharedby, calname):
+    claims = get_session_info()
+
+    result = query_result("name", "=", claims, "user")[0]
+    if dec_or_acc == "accept":
+        result["shared_me"][calname+"_._"+sharedby] = "yes"    
+        create_row_from_data("user", claims, result)
+        return flash_redirect("Now the calendar is shared with you", "/")
+
+    elif result["shared_me"].get(calname+"_._"+sharedby):
+        del result["shared_me"][calname+"_._"+sharedby]
+        create_row_from_data("user", claims, result)
+
+        query = datastore_client.query(kind="cal")
+        query.add_filter("owner", "=", sharedby)
+        query.add_filter("name", "=", calname)
+        fetched = list(query.fetch())
+        print(fetched)
+        if fetched == []:
+            return flash_redirect("Declined Successfully", "/")
+        del fetched["shared"][claims]
+        create_row_from_data("cal", calname + "_._" + sharedby, fetched)
+
+        return flash_redirect("Declined Successfully", "/")
+    else:
+        return flash_redirect("No result found", "/")
+
+
 
 @app.route("/error")
 def error():
@@ -450,9 +537,10 @@ def root():
         )
 
     delete_event(claims)
+    delete_cal(claims)
 
     user_list = projection_on("user", "name")
-    # print(user_list)
+
 
     add_calendar(claims)
     add_event(claims)
@@ -465,7 +553,7 @@ def root():
 
     event_mat = fill_mat(my_cals, week_info, list(selected_cals.keys()))
 
-  
+    userinfo = query_result("name", "=", claims, "user")[0]
 
     temp = render_template(
         "index.html",
@@ -477,9 +565,11 @@ def root():
         pagename="Homepage",
         my_cals=my_cals,
         user_list=user_list,
+        userinfo=userinfo,
         hours=hours,
         event_mat=event_mat,
     )
+
 
     resp = make_response(temp)
     resp.set_cookie("selected_date", selected_date)

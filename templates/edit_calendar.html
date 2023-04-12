@@ -1,0 +1,70 @@
+{% for cal in my_cals %}
+    <form id="sa_edit_cal_{{ cal["name"] }}"
+          method="get"
+          action="/"
+          hidden="true">
+        <input type="text"
+               class="form-control"
+               id="edit_calendar"
+               value="edit_calendar"
+               name="edit_calendar"
+               hidden="true">
+        <div class="mb-3 input-group input-group-sm">
+            <label for="name" class="form-label">Calendar Name:</label>
+            <input type="text"
+                   class="form-control "
+                   id="calname"
+                   value="{{ cal['name'] }}"
+                   name="calname"
+                   readonly="readonly">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Share With (Optional):</label>
+        </div>
+        {% for user in user_list %}
+            {% if user != claims %}
+                <div class="mb-3 form-check form-check-inline">
+                    <input type="checkbox"
+                           class="form-check-input"
+                           id="{{ loop.index }}"
+                           value="{{ user }}"
+                           name="{{ loop.index }}"
+                           {% if cal["shared"][user] %}checked{% endif %}>
+                    <label class="form-check-label" for="{{ loop.index }}">{{ user }}</label>
+                </div>
+            {% endif %}
+        {% endfor %}
+        <div>
+            <input class="float-center btn btn-warning"
+                   type="submit"
+                   value="Submit Edit">
+            <button type="button"
+                    class="btn btn-warning"
+                    data-bs-toggle="modal"
+                    data-bs-target="#idModalCal_{{ loop.index }}">Delete</button>
+            <div class="modal fade"
+                 id="idModalCal_{{ loop.index }}"
+                 tabindex="-1"
+                 aria-labelledby="exampleModalLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Delete Calendar</h5>
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">You are about to delete Calendar!</div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <a class="float-center btn btn-warning"
+                               href="/?delete_cal=delete_cal&cal={{ cal["name"] }}&owner={{ cal["owner"] }}">Delete this Cal</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endfor %}

@@ -4,27 +4,35 @@
             {% for event in event_mat[hour][day.weekday]["event_list"] %}
                 {% if event["vis"] == "true" %}
                     <form id="sa_{{ event["name"] }}" method="get" action="/" hidden="true">
+                        <input type="text"
+                               class="form-control"
+                               id="edit_event"
+                               value="edit_event"
+                               name="edit_event"
+                               hidden="true">
                         <div class="mb-3 input-group input-group-sm">
-                            <label for="name" class="form-label">Event Name</label>
+                            <label for="name" class="form-label">Event Name:</label>
                             <input type="text"
                                    class="form-control "
                                    id="event_name"
                                    value="{{ event["name"] }}"
-                                   name="event_name">
+                                   name="event_name"
+                                   readonly="readonly"> <span class='float.end'> Not Editable </span>
                         </div>
                         <div class="mb-3 input-group input-group-sm">
-                            <label for="name" class="form-label">Calendar</label>
+                            <label for="name" class="form-label">Calendar:</label>
                             <select type="text"
                                     id="cal_name"
                                     name="cal_name"
                                     value="{{ event["cal"] }}"
-                                    class="form-select form-select-sm mb-3">
+                                    class="form-select form-select-sm mb-3"
+                                    readonly="readonly">
                                 <option value="{{ event['cal'] }}">{{ event['cal'] }}</option>
                                 {% for cal in my_cals %}<option value="{{ cal['name'] }}">{{ cal['name'] }}</option>{% endfor %}
                             </select>
                         </div>
                         <div class="mb-3 input-group input-group-sm">
-                            <label for="name" class="form-label">Start Date</label>
+                            <label for="name" class="form-label">Start Date:</label>
                             <input type="date"
                                    class="form-control "
                                    id="start_date"
@@ -32,7 +40,7 @@
                                    name="start_date">
                         </div>
                         <div class="mb-3 input-group input-group-sm">
-                            <label for="name" class="form-label">Start Time</label>
+                            <label for="name" class="form-label">Start Time:</label>
                             <select type="text"
                                     id="start_time"
                                     name="start_time"
@@ -42,7 +50,7 @@
                             </select>
                         </div>
                         <div class="mb-3 input-group input-group-sm">
-                            <label for="name" class="form-label">End Date</label>
+                            <label for="name" class="form-label">End Date:</label>
                             <input type="date"
                                    class="form-control "
                                    id="end_date"
@@ -50,7 +58,7 @@
                                    name="end_date">
                         </div>
                         <div class="mb-3 input-group input-group-sm">
-                            <label for="name" class="form-label">End Time</label>
+                            <label for="name" class="form-label">End Time:</label>
                             <select type="text"
                                     id="end_time"
                                     name="end_time"
@@ -60,11 +68,11 @@
                             </select>
                         </div>
                         <div class="mb-3 input-group input-group-sm">
-                            <label for="name" class="form-label">Notes</label>
+                            <label for="name" class="form-label">Notes:</label>
                             <input type="text" class="form-control " id="notes" value="" name="notes">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Share With (Optional)</label>
+                            <label class="form-label">Share With (Optional):</label>
                         </div>
                         {% for user in user_list %}
                             {% if user != claims %}
@@ -79,13 +87,38 @@
                             {% endif %}
                         {% endfor %}
                         <div>
-                        <input class="float-center btn btn-warning"
-                               type="submit"
-                               value="Submit Event">
-                        <a class="float-center btn btn-warning"
-                           href="/?delete_event=delete_event&event={{ event["name"] }}&cal={{ event["cal"] }}&user={{ claims }}"> 
-                           Delete this Event 
-                        </a>
+                            <input class="float-center btn btn-warning"
+                                   type="submit"
+                                   value="Submit edit">
+                            <button type="button"
+                                    class="btn btn-warning"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#idModalEvent_{{ loop.index }}">Delete</button>
+                            <div class="modal fade"
+                                 id="idModalEvent_{{ loop.index }}"
+                                 tabindex="-1"
+                                 aria-labelledby="exampleModalLabel"
+                                 aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="exampleModalLabel">Delete Event</h5>
+                                            <button type="button"
+                                                    class="btn-close"
+                                                    data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">You are about to delete event!</div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            <a class="float-center btn btn-warning"
+                                               href="/?delete_event=delete_event&event={{ event["name"] }}&cal={{ event["cal"] }}&user={{ claims }}">
+                                                Delete this Event
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 {% endif %}
