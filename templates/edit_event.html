@@ -6,13 +6,13 @@
                     {% if event["creator"] != claims %}
                         <form id="sa_shared_{{ event["name"] }}" hidden="true">
                             <div>This event is shared by {{ event["creator"] }} with you.</div>
-                            <div> Start Date: {{ event["start_date"] }} </div>
-                            <div> Event Name: {{ event["name"] }} </div>
-                            <div> Start Time: {{ event["start_time"] }} </div>
-                            <div> End Date: {{ event["end_date"] }} </div>
-                            <div> End Time: {{ event["end_time"] }} </div>
-                            <div> Notes: {{ event["notes"] }} </div>
-                            <a href="#">click here to discard sharing</a>
+                            <div>Start Date: {{ event["start_date"] }}</div>
+                            <div>Event Name: {{ event["name"] }}</div>
+                            <div>Start Time: {{ event["start_time"] }}</div>
+                            <div>End Date: {{ event["end_date"] }}</div>
+                            <div>End Time: {{ event["end_time"] }}</div>
+                            <div>Notes: {{ event["notes"] }}</div>
+                            <a href="/stop_sharing_event/{{ event["name"] }}/{{ event["cal"] }}">click here to discard sharing</a>
                         </form>
                     {% else %}
                         <form id="sa_{{ event["name"] }}" method="get" action="/" hidden="true">
@@ -41,8 +41,8 @@
                                         class="form-select form-select-sm mb-3"
                                         readonly="readonly">
                                     <option value="{{ event['cal'] }}">{{ event['cal'] }}</option>
-                                    {% for cal in my_cals %}<option value="{{ cal['name'] }}">{{ cal['name'] }}</option>{% endfor %}
                                 </select>
+                                <span class='float.end'>Not Editable</span>
                             </div>
                             <div class="mb-3 input-group input-group-sm">
                                 <label for="name" class="form-label">Start Date:</label>
@@ -82,7 +82,11 @@
                             </div>
                             <div class="mb-3 input-group input-group-sm">
                                 <label for="name" class="form-label">Notes:</label>
-                                <input type="text" class="form-control " id="notes" value="{{ event["notes"] }}" name="notes">
+                                <input type="text"
+                                       class="form-control "
+                                       id="notes"
+                                       value="{{ event["notes"] }}"
+                                       name="notes">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Share With (Optional):</label>
@@ -94,7 +98,8 @@
                                                class="form-check-input"
                                                id="user---{{ loop.index }}"
                                                value="{{ user }}"
-                                               name="user---{{ loop.index }}">
+                                               name="user---{{ loop.index }}"
+                                               >
                                         <label class="form-check-label" for="user---{{ loop.index }}">{{ user }}</label>
                                     </div>
                                 {% endif %}
@@ -119,11 +124,16 @@
                                                 <button type="button"
                                                         class="btn-close"
                                                         data-bs-dismiss="modal"
-                                                        aria-label="Close"></button>
+                                                        aria-label="Close">
+                                                </button>
                                             </div>
-                                            <div class="modal-body">You are about to delete event!</div>
+                                            <div class="modal-body">
+                                                You are about to delete event!
+                                            </div>
                                             <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    Close
+                                                </button>
                                                 <a class="float-center btn btn-warning"
                                                    href="/?delete_event=delete_event&event={{ event["name"] }}&cal={{ event["cal"] }}&user={{ claims }}">
                                                     Delete this Event

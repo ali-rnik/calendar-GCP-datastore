@@ -401,12 +401,27 @@ def add_event(claims):
         if r.startswith("user"):
             will_share.append(request.args.get(r))
 
+    if request.args.get("edit_event") == "edit_event":
+        query = datastore_client.query(kind="event")
+        query.add_filter("cal", "=", calname)
+        query.add_filter("name", "=", event_name)
+        fetched = list(query.fetch())
 
-    if retrieve_row("event", event_name + "_._" + calname + "_._" + claims) != None:
-        if request.args.get("edit_event") == "edit_event":
+        for f in fetched:
+            delete_row(
+                "event",
+                f["name"]
+                + "_._"
+                + f["cal"]
+                + "_._"
+                + f["creator"]
+                + "_._"
+                + f["user"],
+            )
+        for u in will_share:
             create_row_from_data(
                 "event",
-                event_name + "_._" + calname + "_._" + claims,
+                event_name + "_._" + calname + "_._" + claims + "_._" + u,
                 {
                     "name": event_name,
                     "creator": claims,
@@ -414,32 +429,31 @@ def add_event(claims):
                     "end_date": time.mktime(end_date),
                     "notes": notes,
                     "cal": calname,
-                    "shared": will_share,
+                    "user": u,
                 },
             )
-            flash("Event edited Successfully.")
-            return
-        flash("Event Exists! Choose different name!")
-        return False
+        flash("Event edited Successfully.")
+        return
 
-    create_row_from_data(
-        "event",
-        event_name + "_._" + calname + "_._" + claims,
-        {
-            "name": event_name,
-            "creator": claims,
-            "start_date": time.mktime(start_date),
-            "end_date": time.mktime(end_date),
-            "notes": notes,
-            "cal": calname,
-            "shared": will_share,
-        },
-    )
+    for u in will_share:
+        create_row_from_data(
+            "event",
+            event_name + "_._" + calname + "_._" + claims + "_._" + u,
+            {
+                "name": event_name,
+                "creator": claims,
+                "start_date": time.mktime(start_date),
+                "end_date": time.mktime(end_date),
+                "notes": notes,
+                "cal": calname,
+                "user": u,
+            },
+        )
+
     flash("Event Added Successfully.")
 
 
-
-def fill_mat(my_cals, week_info, selected_cals):
+def fill_mat(my_cals, week_info, selected_cals, claims):
     color_list = [
         "bg-warning",
         "bg-info",
@@ -465,6 +479,8 @@ def fill_mat(my_cals, week_info, selected_cals):
     if selected_cals == []:
         return
     query.add_filter("cal", "IN", selected_cals)
+    query.add_filter("user", "=", claims)
+
     result = list(query.fetch())
 
     week_start = (
@@ -537,7 +553,16 @@ def delete_cal(claims):
     query.add_filter("creator", "=", result["owner"])
     fetched = list(query.fetch())
     for res in fetched:
-        delete_row("event", res["name"] + "_._" + res["cal"] + "_._" + res["creator"])
+        delete_row(
+            "event",
+            res["name"]
+            + "_._"
+            + res["cal"]
+            + "_._"
+            + res["creator"]
+            + "_._"
+            + res["user"],
+        )
 
     delete_row("cal", request.args.get("cal") + "_._" + claims)
     flash("Calendar Deleted Successfully")
@@ -550,7 +575,24 @@ def delete_event(claims):
     if request.args.get("user") != claims:
         flash("You are not the creator of event but you can Unsubscribe!")
         return
-    delete_row("event", request.args.get("event") + request.args.get("cal") + claims)
+
+    query = datastore_client.query(kind="event")
+    query.add_filter("creator", "=", request.args.get("user"))
+    query.add_filter("cal", "=", request.args.get("cal"))
+    query.add_filter("name", "=", request.args.get("event"))
+    fetched = list(query.fetch())
+
+    for f in fetched:
+        delete_row(
+            "event",
+            f["name"]
+            + "_._"
+            + f["cal"]
+            + "_._"
+            + f["creator"]
+            + "_._"
+            + f["user"],
+        )
     flash("Event Deleted Successfully")
 
 
@@ -586,16 +628,27 @@ def acc_or_dec_shared_cal(dec_or_acc, sharedby, calname):
     else:
         return flash_redirect("No result found", "/")
 
+
 @app.route("/stop_sharing_event/<event_name>/<calname>")
 def stop_sharing_event(event_name, calname, username):
     claims = get_session_info()
 
     query = datastore_client.query(kind="event")
-    query.add_filter("username", "=", username)
+    query.add_filter("user", "=", username)
     query.add_filter("cal", "=", calname)
     query.add_filter("name", "=", eventname)
     fetched = list(query.fetch())[0]
-    delete_row("event", fetched[""])
+    delete_row(
+        "event",
+        f["name"]
+        + "_._"
+        + f["cal"]
+        + "_._"
+        + f["creator"]
+        + "_._"
+        + f["user"],
+    )
+    flash_redirect("Stopped Sharing this event with you", "/")
 
 
 @app.route("/error")
@@ -625,10 +678,7 @@ def root():
 
     week_info, selected_date, today, dominant_month = get_and_set_cal_week()
 
-    # print("week info: ", week_info)
-    # print("my_cals: ", my_cals)
-
-    event_mat = fill_mat(my_cals, week_info, list(selected_cals.keys()))
+    event_mat = fill_mat(my_cals, week_info, list(selected_cals.keys()), claims)
 
     userinfo = query_result("name", "=", claims, "user")[0]
 
