@@ -9,7 +9,6 @@
                 onclick="makeAllInvisExcept('sa_add_event'); return false;">Add Event</button>
     </div>
     <div class="container">
-        {% if my_cals %}
             <form action="/" method="get">
                 {% for cal in my_cals %}
                     <label for class="list-group-item d-flex gap-2">
@@ -110,6 +109,5 @@
                        checked>
                 <input class="float-center btn btn-warning" type="submit" value="apply">
             </form>
-        {% endif %}
     </div>
 </div>

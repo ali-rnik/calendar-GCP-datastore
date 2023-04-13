@@ -173,8 +173,11 @@ def get_week(day):
 def get_my_cals(user):
     result = query_result("owner", "=", user, "cal")
     shared_cals = get_shared_cals_list(user)
-    print("shared_cals ",shared_cals)
+    print("shared_cals ", shared_cals)
     print("my_cals", result)
+    if result == [None]:
+        result = []
+
     for item in shared_cals:
         item["shared_me"] = "true"
         result.append(item)
@@ -186,7 +189,7 @@ def get_my_cals(user):
 
 
 def add_selected_field(result):
-    if result == [None]:
+    if result == [None] or result == None or result == "":
         return [], {}
     selected = {}
     for k in request.args:
@@ -195,15 +198,16 @@ def add_selected_field(result):
 
     if selected == {} and request.args.get("cal_list_get") == None:
         list_of_selected = request.cookies.get("selected_cals")
-        if list_of_selected != None and list_of_selected != '':
+        if list_of_selected != None and list_of_selected != "":
             for i in list_of_selected.split(","):
                 selected[i] = True
 
     for r in result:
-        if selected.get(r["name"]) != None:
+        if r != None and selected.get(r.get("name")) != None:
             r["selected"] = "true"
-    
+
     return result, selected
+
 
 def get_shared_cals_list(claims):
     result = query_result("name", "=", claims, "user")[0]["shared_me"]
@@ -213,7 +217,6 @@ def get_shared_cals_list(claims):
             spl = k.split("_._")
             neat_list.append({"name": spl[0], "owner": spl[1]})
     return neat_list
-
 
 
 def query_result(key, comp, val, kind):
@@ -388,11 +391,16 @@ def add_event(claims):
         end_date + " " + end_time, "%Y-%m-%d %H:%M"
     ).timetuple()
 
-    will_share = []
+    if start_date > end_date:
+        flash("Start Date is later than End Date!")
+        return False
+
+    will_share = [claims]
 
     for r in request.args:
         if r.startswith("user"):
             will_share.append(request.args.get(r))
+
 
     if retrieve_row("event", event_name + "_._" + calname + "_._" + claims) != None:
         if request.args.get("edit_event") == "edit_event":
@@ -406,7 +414,7 @@ def add_event(claims):
                     "end_date": time.mktime(end_date),
                     "notes": notes,
                     "cal": calname,
-                    "user": claims,
+                    "shared": will_share,
                 },
             )
             flash("Event edited Successfully.")
@@ -414,29 +422,21 @@ def add_event(claims):
         flash("Event Exists! Choose different name!")
         return False
 
-    if start_date > end_date:
-        flash("Start Date is later than End Date!")
-        return False
+    create_row_from_data(
+        "event",
+        event_name + "_._" + calname + "_._" + claims,
+        {
+            "name": event_name,
+            "creator": claims,
+            "start_date": time.mktime(start_date),
+            "end_date": time.mktime(end_date),
+            "notes": notes,
+            "cal": calname,
+            "shared": will_share,
+        },
+    )
+    flash("Event Added Successfully.")
 
-    if len(will_share) == 0:
-        create_row_from_data(
-            "event",
-            event_name + "_._" + calname + "_._" + claims,
-            {
-                "name": event_name,
-                "creator": claims,
-                "start_date": time.mktime(start_date),
-                "end_date": time.mktime(end_date),
-                "notes": notes,
-                "cal": calname,
-                "user": claims,
-            },
-        )
-        flash("Event Added Successfully.")
-
-    if len(will_share) > 0:
-        flash("Sharing not enabled yet")
-        return
 
 
 def fill_mat(my_cals, week_info, selected_cals):
@@ -520,6 +520,25 @@ def delete_cal(claims):
         flash("You are not authorized to delete this calendar")
         return
 
+    result = retrieve_row("cal", request.args.get("cal") + "_._" + claims)
+    if result != None:
+        for res in result["shared"]:
+            user = retrieve_row("user", res)
+            if user != None:
+                shared_me = user["shared_me"].copy()
+                for cals in user["shared_me"]:
+                    if cals == (request.args.get("cal") + "_._" + claims):
+                        del shared_me[request.args.get("cal") + "_._" + claims]
+                user["shared_me"] = shared_me
+                create_row_from_data("user", user["name"], user)
+
+    query = datastore_client.query(kind="event")
+    query.add_filter("cal", "=", result["name"])
+    query.add_filter("creator", "=", result["owner"])
+    fetched = list(query.fetch())
+    for res in fetched:
+        delete_row("event", res["name"] + "_._" + res["cal"] + "_._" + res["creator"])
+
     delete_row("cal", request.args.get("cal") + "_._" + claims)
     flash("Calendar Deleted Successfully")
 
@@ -566,6 +585,17 @@ def acc_or_dec_shared_cal(dec_or_acc, sharedby, calname):
         return flash_redirect("Declined Successfully", "/")
     else:
         return flash_redirect("No result found", "/")
+
+@app.route("/stop_sharing_event/<event_name>/<calname>")
+def stop_sharing_event(event_name, calname, username):
+    claims = get_session_info()
+
+    query = datastore_client.query(kind="event")
+    query.add_filter("username", "=", username)
+    query.add_filter("cal", "=", calname)
+    query.add_filter("name", "=", eventname)
+    fetched = list(query.fetch())[0]
+    delete_row("event", fetched[""])
 
 
 @app.route("/error")

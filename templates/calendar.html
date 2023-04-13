@@ -34,12 +34,21 @@
                                 scope="col">
                                 {% for event in event_mat[hour][day.weekday]["event_list"] %}
                                     <div>
+                                        {% if event["creator"] == claims %}
                                         <a class="text-black"
                                            id="click_to_edit_{{ event["name"] }}"
                                            href="#"
                                            onclick="makeAllInvisExcept('sa_{{ event["name"] }}'); return false;">
                                             {% if event["vis"] == "true" %}{{ event["name"] }}{% endif %}
                                         </a>
+                                        {% else %}
+                                        <a class="text-black"
+                                           id="click_to_edit_shared_{{ event["name"] }}"
+                                           href="#"
+                                           onclick="makeAllInvisExcept('sa_shared_{{ event["name"] }}'); return false;">
+                                            {% if event["vis"] == "true" %}{{ event["name"] }}{% endif %}
+                                        </a>                                        
+                                        {% endif %}
                                     </div>
                                 {% endfor %}
                             </td>
