@@ -1,6 +1,6 @@
 {% for cal in my_cals %}
     {% if not cal["shared_me"] %}
-    <form id="sa_edit_cal_{{ cal["name"] }}"
+    <form id="sa_edit_cal_{{ cal["name"] }}_{{cal["owner"]}}"
           method="get"
           action="/"
           hidden="true">

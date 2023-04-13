@@ -16,13 +16,13 @@
                                type="checkbox"
                                id="selected-{{ loop.index }}"
                                name="selected-{{ loop.index }}"
-                               value="{{ cal['name'] }}"
+                               value="{{ cal['name'] }}_._{{cal["owner"]}}"
                                {% if cal["selected"] == "true" %}checked{% endif %}>
                         {% if not cal["shared_me"] %}
                             <a class="icon-link icon-link-hover"
                                id="click_to_edit_{{ cal["name"] }}"
                                href="#"
-                               onclick="makeAllInvisExcept('sa_edit_cal_{{ cal["name"] }}'); return false;">
+                               onclick="makeAllInvisExcept('sa_edit_cal_{{ cal["name"] }}_{{cal["owner"]}}'); return false;">
                                 {{ cal['name'] }}
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      width="16"

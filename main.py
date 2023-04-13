@@ -173,16 +173,13 @@ def get_week(day):
 def get_my_cals(user):
     result = query_result("owner", "=", user, "cal")
     shared_cals = get_shared_cals_list(user)
-    print("shared_cals ", shared_cals)
-    print("my_cals", result)
+
     if result == [None]:
         result = []
 
     for item in shared_cals:
         item["shared_me"] = "true"
         result.append(item)
-
-    print("after changes my_cals", result)
 
     result, selected = add_selected_field(result)
     return result, selected
@@ -203,9 +200,8 @@ def add_selected_field(result):
                 selected[i] = True
 
     for r in result:
-        if r != None and selected.get(r.get("name")) != None:
+        if r != None and selected.get(r.get("name")+"_._" + r["owner"]) != None:
             r["selected"] = "true"
-
     return result, selected
 
 
@@ -474,13 +470,22 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
             event_mat[hour][wd]["color"] = "None"
             event_mat[hour][wd]["event_list"] = []
 
-    query = datastore_client.query(kind="event")
 
     if selected_cals == []:
         return
-    query.add_filter("cal", "IN", selected_cals)
-    query.add_filter("user", "=", claims)
+    
+    creators=[]
+    for i in range(len(selected_cals)):
+        creators.append(selected_cals[i].split("_._")[1])
+        selected_cals[i] = selected_cals[i].split("_._")[0]
 
+    query = datastore_client.query(kind="event")
+
+    print(selected_cals)
+    print(claims)
+    query.add_filter("cal", "IN", selected_cals)
+    query.add_filter("creator", "IN", creators)
+    
     result = list(query.fetch())
 
     week_start = (
@@ -678,6 +683,8 @@ def root():
 
     week_info, selected_date, today, dominant_month = get_and_set_cal_week()
 
+    print(my_cals )
+    print(selected_cals)
     event_mat = fill_mat(my_cals, week_info, list(selected_cals.keys()), claims)
 
     userinfo = query_result("name", "=", claims, "user")[0]
