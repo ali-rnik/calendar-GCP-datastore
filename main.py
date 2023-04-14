@@ -199,7 +199,7 @@ def add_selected_field(result):
                 selected[i] = True
 
     for r in result:
-        if r != None and selected.get(r.get("name")+"_._" + r["owner"]) != None:
+        if r != None and selected.get(r.get("name") + "_._" + r["owner"]) != None:
             r["selected"] = "true"
     return result, selected
 
@@ -368,7 +368,9 @@ def add_event(claims):
         return False
 
     if len(event_name) > 15 or event_name.find(" ") != -1:
-        flash("Evenet name should be less than 15 character and should not contains whitespace")
+        flash(
+            "Evenet name should be less than 15 character and should not contains whitespace"
+        )
         return False
 
     if (
@@ -408,16 +410,10 @@ def add_event(claims):
         for f in fetched:
             delete_row(
                 "event",
-                f["name"]
-                + "_._"
-                + f["cal"]
-                + "_._"
-                + f["creator"]
-                + "_._"
-                + f["user"],
+                f["name"] + "_._" + f["cal"] + "_._" + f["creator"] + "_._" + f["user"],
             )
 
-    # check for any clashes 
+    # check for any clashes
     ts_start = time.mktime(start_date)
     ts_end = time.mktime(end_date)
 
@@ -427,8 +423,8 @@ def add_event(claims):
     fetched = list(query.fetch())
     print("query on events in add_event: ", fetched)
     for f in fetched:
-        print("iter event: " , f)
-        print("ts_start : ts_end", ts_start, " : ", ts_end )
+        print("iter event: ", f)
+        print("ts_start : ts_end", ts_start, " : ", ts_end)
         if ts_start >= f["end_date"] or ts_end <= f["start_date"]:
             continue
         else:
@@ -454,7 +450,7 @@ def add_event(claims):
 
 
 def fill_mat(my_cals, week_info, selected_cals, claims):
-    color_list=["bg-warning","bg-info","bg-danger","bg-primary","bg-success"]
+    color_list = ["bg-warning", "bg-info", "bg-danger", "bg-primary", "bg-success"]
     event_mat = {}
     for hour in hours:
         event_mat[hour] = {}
@@ -462,13 +458,15 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
             event_mat[hour][wd] = {}
             event_mat[hour][wd]["event_list"] = []
 
-
     if selected_cals == []:
         return
-    
-    result = []
+
+    result = {}
     for i in range(len(selected_cals)):
-        calname, username = selected_cals[i].split("_._")[0], selected_cals[i].split("_._")[1]
+        calname, username = (
+            selected_cals[i].split("_._")[0],
+            selected_cals[i].split("_._")[1],
+        )
         query = datastore_client.query(kind="event")
         query.add_filter("cal", "=", calname)
         query.add_filter("creator", "=", username)
@@ -478,8 +476,8 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
             for res in r:
                 if username != claims:
                     res["event_shared_by"] = username
-                result.append(res)
-    #add direct shared cals to personalCalendar of user:
+                result[res["name"] + res["creator"] + res["cal"]] = res
+    # add direct shared cals to personalCalendar of user:
     query = datastore_client.query(kind="event")
     query.add_filter("cal", "=", "personalCalendar")
     query.add_filter("user", "=", claims)
@@ -488,7 +486,7 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
     if r != None and r != [None] and r != []:
         for res in r:
             res["directly_shared"] = "true"
-            result.append(res)
+            result[res["name"] + res["creator"] + res["cal"]] = res
 
     week_start = (
         str(week_info[0]["year"])
@@ -513,16 +511,14 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
 
     circular_counter = 0
 
-    print("results for filling mat is: ", result)
-
     for event in result:
-        start_t = datetime.datetime.fromtimestamp(event["start_date"])
-        end_t = datetime.datetime.fromtimestamp(event["end_date"])
-        event["start_date"] = start_t.strftime("%Y-%m-%d")
-        event["end_date"] = end_t.strftime("%Y-%m-%d")
-        event["start_time"] = start_t.strftime("%H:%M")
-        event["end_time"] = end_t.strftime("%H:%M")
-        event["color"] = color_list[circular_counter]
+        start_t = datetime.datetime.fromtimestamp(result[event]["start_date"])
+        end_t = datetime.datetime.fromtimestamp(result[event]["end_date"])
+        result[event]["start_date"] = start_t.strftime("%Y-%m-%d")
+        result[event]["end_date"] = end_t.strftime("%Y-%m-%d")
+        result[event]["start_time"] = start_t.strftime("%H:%M")
+        result[event]["end_time"] = end_t.strftime("%H:%M")
+        result[event]["color"] = color_list[circular_counter]
         circular_counter += 1
         circular_counter = circular_counter % len(color_list)
         visit = "true"
@@ -530,8 +526,8 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
             if start_t >= week_start and start_t <= week_end:
                 weekday = week_days_name[start_t.weekday()]
                 clock = start_t.strftime("%H:%M")
-                event["vis"] = visit
-                event_mat[clock][weekday]["event_list"].append(event.copy())
+                result[event]["vis"] = visit
+                event_mat[clock][weekday]["event_list"].append(result[event].copy())
             visit = "false"
             start_t += datetime.timedelta(minutes=30)
 
@@ -595,13 +591,7 @@ def delete_event(claims):
     for f in fetched:
         delete_row(
             "event",
-            f["name"]
-            + "_._"
-            + f["cal"]
-            + "_._"
-            + f["creator"]
-            + "_._"
-            + f["user"],
+            f["name"] + "_._" + f["cal"] + "_._" + f["creator"] + "_._" + f["user"],
         )
     flash("Event Deleted Successfully")
 
@@ -639,8 +629,8 @@ def acc_or_dec_shared_cal(dec_or_acc, sharedby, calname):
         return flash_redirect("No result found", "/?cal_list_get=cal_list_get")
 
 
-@app.route("/stop_sharing_event/<event_name>/<calname>")
-def stop_sharing_event(event_name, calname, username):
+@app.route("/stop_sharing_event/<eventname>/<calname>/<username>")
+def stop_sharing_event(eventname, calname, username):
     claims = get_session_info()
 
     query = datastore_client.query(kind="event")
@@ -650,15 +640,15 @@ def stop_sharing_event(event_name, calname, username):
     fetched = list(query.fetch())[0]
     delete_row(
         "event",
-        f["name"]
+        fetched["name"]
         + "_._"
-        + f["cal"]
+        + fetched["cal"]
         + "_._"
-        + f["creator"]
+        + fetched["creator"]
         + "_._"
-        + f["user"],
+        + fetched["user"],
     )
-    flash_redirect("Stopped Sharing this event with you", "/")
+    return flash_redirect("Stopped Sharing this event with you", "/")
 
 
 @app.route("/error")
@@ -677,11 +667,10 @@ def root():
             pagename="Homepage",
         )
         resp = make_response(temp)
-        resp.set_cookie("selected_date", '', expires=0)
-        resp.set_cookie("selected_cals", '', expires=0)
+        resp.set_cookie("selected_date", "", expires=0)
+        resp.set_cookie("selected_cals", "", expires=0)
 
         return resp
-        
 
     delete_event(claims)
     delete_cal(claims)
@@ -996,4 +985,3 @@ if __name__ == "__main__":
 	app.run(host="0.0.0.0", port=8080, debug=True)
 }   
 """
-
