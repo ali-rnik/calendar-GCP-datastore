@@ -118,13 +118,14 @@ def create_cal_for_user(user, calname, shared_list):
     create_row_from_data(
         "cal", calname + "_._" + user, {"name": calname, "owner": user, "shared": {}}
     )
+    return True
 
 
 def add_user_if_not_added(claims):
     if retrieve_row("user", claims) != None:
         return
     create_row_from_data("user", claims, {"name": claims, "shared_me": {}})
-    if create_cal_for_user(claims, "personal calendar", "") != True:
+    if create_cal_for_user(claims, "personalCalendar", "") != True:
         print("error ! cannot create personal calendar")
     return
 
@@ -278,6 +279,10 @@ def add_calendar(claims):
         flash("Please Enter Calendar Name")
         return False
 
+    if calname.find(" ") != -1:
+        flash("Calendar Name Can not contains whitespace.")
+        return False
+
     shared_dic = {}
     for r in request.args:
         if r == "calname" or r == "edit_calendar":
@@ -362,8 +367,8 @@ def add_event(claims):
     if event_name == None:
         return False
 
-    if len(event_name) > 15:
-        flash("Evenet name should be less than 15 character!")
+    if len(event_name) > 15 or event_name.find(" ") != -1:
+        flash("Evenet name should be less than 15 character and should not contains whitespace")
         return False
 
     if (
@@ -411,22 +416,24 @@ def add_event(claims):
                 + "_._"
                 + f["user"],
             )
-        for u in will_share:
-            create_row_from_data(
-                "event",
-                event_name + "_._" + calname + "_._" + claims + "_._" + u,
-                {
-                    "name": event_name,
-                    "creator": claims,
-                    "start_date": time.mktime(start_date),
-                    "end_date": time.mktime(end_date),
-                    "notes": notes,
-                    "cal": calname,
-                    "user": u,
-                },
-            )
-        flash("Event edited Successfully.")
-        return
+
+    # check for any clashes 
+    ts_start = time.mktime(start_date)
+    ts_end = time.mktime(end_date)
+
+    query = datastore_client.query(kind="event")
+    query.add_filter("cal", "=", "personalCalendar")
+    query.add_filter("user", "IN", will_share)
+    fetched = list(query.fetch())
+    print("query on events in add_event: ", fetched)
+    for f in fetched:
+        print("iter event: " , f)
+        print("ts_start : ts_end", ts_start, " : ", ts_end )
+        if ts_start >= f["end_date"] or ts_end <= f["start_date"]:
+            continue
+        else:
+            flash("Event Clashes to one of personalCalendars and Can not shared.")
+            return
 
     for u in will_share:
         create_row_from_data(
@@ -443,7 +450,7 @@ def add_event(claims):
             },
         )
 
-    flash("Event Added Successfully.")
+    flash("Event Added/Edited Successfully.")
 
 
 def fill_mat(my_cals, week_info, selected_cals, claims):
@@ -460,7 +467,6 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
         return
     
     result = []
-    print("selected cals:", selected_cals)
     for i in range(len(selected_cals)):
         calname, username = selected_cals[i].split("_._")[0], selected_cals[i].split("_._")[1]
         query = datastore_client.query(kind="event")
@@ -473,8 +479,17 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
                 if username != claims:
                     res["event_shared_by"] = username
                 result.append(res)
+    #add direct shared cals to personalCalendar of user:
+    query = datastore_client.query(kind="event")
+    query.add_filter("cal", "=", "personalCalendar")
+    query.add_filter("user", "=", claims)
+    query.add_filter("creator", "!=", claims)
+    r = list(query.fetch())
+    if r != None and r != [None] and r != []:
+        for res in r:
+            res["directly_shared"] = "true"
+            result.append(res)
 
-    print("the result is:", result)
     week_start = (
         str(week_info[0]["year"])
         + "-"
@@ -497,6 +512,9 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
     week_end = datetime.datetime.strptime(week_end, "%Y-%m-%d %H:%M")
 
     circular_counter = 0
+
+    print("results for filling mat is: ", result)
+
     for event in result:
         start_t = datetime.datetime.fromtimestamp(event["start_date"])
         end_t = datetime.datetime.fromtimestamp(event["end_date"])
@@ -616,9 +634,9 @@ def acc_or_dec_shared_cal(dec_or_acc, sharedby, calname):
         del fetched["shared"][claims]
         create_row_from_data("cal", calname + "_._" + sharedby, fetched)
 
-        return flash_redirect("Declined Successfully", "/")
+        return flash_redirect("Declined Successfully", "/?cal_list_get=cal_list_get")
     else:
-        return flash_redirect("No result found", "/")
+        return flash_redirect("No result found", "/?cal_list_get=cal_list_get")
 
 
 @app.route("/stop_sharing_event/<event_name>/<calname>")
@@ -653,11 +671,17 @@ def root():
     claims = get_session_info()
 
     if not claims:
-        return render_template(
+        temp = render_template(
             "index.html",
             is_logged_in=False,
             pagename="Homepage",
         )
+        resp = make_response(temp)
+        resp.set_cookie("selected_date", '', expires=0)
+        resp.set_cookie("selected_cals", '', expires=0)
+
+        return resp
+        
 
     delete_event(claims)
     delete_cal(claims)
@@ -972,3 +996,4 @@ if __name__ == "__main__":
 	app.run(host="0.0.0.0", port=8080, debug=True)
 }   
 """
+

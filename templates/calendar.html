@@ -19,7 +19,6 @@
 <div class="overflow-y-scroll overflow-x-scroll"
      style="height: 650px;
             width:900px">
-
     <table class="table table-sm table-bordered">
         <thead class="sticky-top table-dark">
             <tr>
@@ -40,11 +39,18 @@
                                             <div style="width: 6rem"
                                                  class="col text-wrap {{ event["color"] }} bg-opacity-75 rounded ">
                                                 {% if event["vis"] == "true" %}
-                                                    {% if not event["event_shared_by"] %}
+                                                    {% if not event["event_shared_by"] and not event["directly_shared"] %}
                                                         <a class="text-black"
                                                            id="click_to_edit_{{ event["name"] }}"
                                                            href="#"
                                                            onclick="makeAllInvisExcept('sa_{{ event["name"] }}'); return false;">
+                                                            {{ event["name"] }}
+                                                        </a>
+                                                    {% elif event["directly_shared"] %}
+                                                        <a class="text-black"
+                                                           id="click_to_edit_shared_{{ event["name"] }}"
+                                                           href="#"
+                                                           onclick="makeAllInvisExcept('sa_direct_shared_{{ event["name"] }}'); return false;">
                                                             {{ event["name"] }}
                                                         </a>
                                                     {% else %}

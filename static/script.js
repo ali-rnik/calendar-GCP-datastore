@@ -25,7 +25,7 @@ window.addEventListener('load', function () {
 			document.getElementById('sign-out').hidden = true;
 			document.getElementById('popup-firebase').hidden = false;
 
-			document.cookie = "token=;path=/";
+			document.cookie = "token=;selected_date=;selected_cals=;path=/";
 		}
 	}, function(error) {
 		console.log(error);
