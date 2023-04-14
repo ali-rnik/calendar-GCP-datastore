@@ -1,5 +1,5 @@
 {% set months=['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
-<div class="d-grid gap-2 d-md-block ">
+<div class="d-grid gap-2 d-md-block">
     <button class="btn btn-primary float-start"
             type="button"
             onclick="location.href = '/?day={{ wi[0]["day"] }}-{{ wi[0]["month"] }}-{{ wi[0]["year"] }}&offset=-7';">
@@ -16,8 +16,11 @@
         NEXT Week
     </button>
 </div>
-<div class="overflow-scroll" style="height: 650px;">
-    <table class="table table-sm">
+<div class="overflow-y-scroll overflow-x-scroll"
+     style="height: 650px;
+            width:900px">
+
+    <table class="table table-sm table-bordered">
         <thead class="sticky-top table-dark">
             <tr>
                 <th class="th-sm" scope="col">Time</th>
@@ -30,27 +33,35 @@
                     <th scope="row">{{ hour }}</th>
                     {% for day in wi %}
                         {% if event_mat %}
-                            <td class="{{ event_mat[hour][day.weekday]["color"] }}  bg-opacity-75"
-                                scope="col">
-                                {% for event in event_mat[hour][day.weekday]["event_list"] %}
-                                    <div>
-                                        {% if event["creator"] == claims %}
-                                        <a class="text-black"
-                                           id="click_to_edit_{{ event["name"] }}"
-                                           href="#"
-                                           onclick="makeAllInvisExcept('sa_{{ event["name"] }}'); return false;">
-                                            {% if event["vis"] == "true" %}{{ event["name"] }}{% endif %}
-                                        </a>
-                                        {% else %}
-                                        <a class="text-black"
-                                           id="click_to_edit_shared_{{ event["name"] }}"
-                                           href="#"
-                                           onclick="makeAllInvisExcept('sa_shared_{{ event["name"] }}'); return false;">
-                                            {% if event["vis"] == "true" %}{{ event["name"] }}{% endif %}
-                                        </a>                                        
-                                        {% endif %}
+                            <td scope="col">
+                                <div class="container">
+                                    <div class="row">
+                                        {% for event in event_mat[hour][day.weekday]["event_list"] %}
+                                            <div style="width: 6rem"
+                                                 class="col text-wrap {{ event["color"] }} bg-opacity-75 rounded ">
+                                                {% if event["vis"] == "true" %}
+                                                    {% if not event["event_shared_by"] %}
+                                                        <a class="text-black"
+                                                           id="click_to_edit_{{ event["name"] }}"
+                                                           href="#"
+                                                           onclick="makeAllInvisExcept('sa_{{ event["name"] }}'); return false;">
+                                                            {{ event["name"] }}
+                                                        </a>
+                                                    {% else %}
+                                                        <a class="text-black"
+                                                           id="click_to_edit_shared_{{ event["name"] }}"
+                                                           href="#"
+                                                           onclick="makeAllInvisExcept('sa_shared_{{ event["name"] }}'); return false;">
+                                                            {{ event["name"] }}
+                                                        </a>
+                                                    {% endif %}
+                                                {% else %}
+                                                    .
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
                                     </div>
-                                {% endfor %}
+                                </div>
                             </td>
                         {% else %}
                             <td scope="col">

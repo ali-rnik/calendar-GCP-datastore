@@ -3,7 +3,7 @@
         {% if event_mat %}
             {% for event in event_mat[hour][day.weekday]["event_list"] %}
                 {% if event["vis"] == "true" %}
-                    {% if event["creator"] != claims %}
+                    {% if event["event_shared_by"] %}
                         <form id="sa_shared_{{ event["name"] }}" hidden="true">
                             <div>This event is shared by {{ event["creator"] }} with you.</div>
                             <div>Start Date: {{ event["start_date"] }}</div>
@@ -12,7 +12,11 @@
                             <div>End Date: {{ event["end_date"] }}</div>
                             <div>End Time: {{ event["end_time"] }}</div>
                             <div>Notes: {{ event["notes"] }}</div>
-                            <a href="/stop_sharing_event/{{ event["name"] }}/{{ event["cal"] }}">click here to discard sharing</a>
+                            {% if event["directly_shared"] %}
+                                <a href="/stop_sharing_event/{{ event["name"] }}/{{ event["cal"] }}">click here to discard sharing</a>
+                            {% else %}
+                                <div>To remove this event , you must unshare the shared calendar.</div>
+                            {% endif %}
                         </form>
                     {% else %}
                         <form id="sa_{{ event["name"] }}" method="get" action="/" hidden="true">
@@ -98,8 +102,7 @@
                                                class="form-check-input"
                                                id="user---{{ loop.index }}"
                                                value="{{ user }}"
-                                               name="user---{{ loop.index }}"
-                                               >
+                                               name="user---{{ loop.index }}">
                                         <label class="form-check-label" for="user---{{ loop.index }}">{{ user }}</label>
                                     </div>
                                 {% endif %}
@@ -111,16 +114,20 @@
                                 <button type="button"
                                         class="btn btn-warning"
                                         data-bs-toggle="modal"
-                                        data-bs-target="#idModalEvent_{{ loop.index }}">Delete</button>
+                                        data-bs-target="#idModalEvent_{{ loop.index }}_{{ event["name"] }}_{{ event["cal"] }}">
+                                    Delete
+                                </button>
                                 <div class="modal fade"
-                                     id="idModalEvent_{{ loop.index }}"
+                                     id="idModalEvent_{{ loop.index }}_{{ event["name"] }}_{{ event["cal"] }}"
                                      tabindex="-1"
                                      aria-labelledby="exampleModalLabel"
                                      aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">Delete Event</h5>
+                                                <h5 class="modal-title" id="exampleModalLabel">
+                                                    Delete Event
+                                                </h5>
                                                 <button type="button"
                                                         class="btn-close"
                                                         data-bs-dismiss="modal"

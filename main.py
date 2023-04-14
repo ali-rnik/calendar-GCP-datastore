@@ -166,14 +166,12 @@ def get_week(day):
         )
 
     dominant_month = Counter(dominant_month).most_common(1)[0][0]
-    # print(week_days, dominant_month)
     return (week_days, calendar.month_name[dominant_month])
 
 
-def get_my_cals(user):
-    result = query_result("owner", "=", user, "cal")
-    shared_cals = get_shared_cals_list(user)
-
+def get_my_cals(claims):
+    result = query_result("owner", "=", claims, "cal")
+    shared_cals = get_shared_cals_list(claims)
     if result == [None]:
         result = []
 
@@ -273,7 +271,6 @@ def projection_on(kind, prop):
 
 def add_calendar(claims):
     calname = request.args.get("calname")
-    # print(calname)
     if calname == None:
         return False
 
@@ -450,44 +447,34 @@ def add_event(claims):
 
 
 def fill_mat(my_cals, week_info, selected_cals, claims):
-    color_list = [
-        "bg-warning",
-        "bg-info",
-        "bg-danger",
-        "big-primary",
-        "bg-success",
-        "bg-warning",
-        "bg-info",
-        "bg-success",
-        "bg-danger",
-        "big-primary",
-    ]
+    color_list=["bg-warning","bg-info","bg-danger","bg-primary","bg-success"]
     event_mat = {}
     for hour in hours:
         event_mat[hour] = {}
         for wd in week_days_name:
             event_mat[hour][wd] = {}
-            event_mat[hour][wd]["color"] = "None"
             event_mat[hour][wd]["event_list"] = []
 
 
     if selected_cals == []:
         return
     
-    creators=[]
+    result = []
+    print("selected cals:", selected_cals)
     for i in range(len(selected_cals)):
-        creators.append(selected_cals[i].split("_._")[1])
-        selected_cals[i] = selected_cals[i].split("_._")[0]
+        calname, username = selected_cals[i].split("_._")[0], selected_cals[i].split("_._")[1]
+        query = datastore_client.query(kind="event")
+        query.add_filter("cal", "=", calname)
+        query.add_filter("creator", "=", username)
+        query.add_filter("user", "=", username)
+        r = list(query.fetch())
+        if r != None and r != [None] and r != []:
+            for res in r:
+                if username != claims:
+                    res["event_shared_by"] = username
+                result.append(res)
 
-    query = datastore_client.query(kind="event")
-
-    print(selected_cals)
-    print(claims)
-    query.add_filter("cal", "IN", selected_cals)
-    query.add_filter("creator", "IN", creators)
-    
-    result = list(query.fetch())
-
+    print("the result is:", result)
     week_start = (
         str(week_info[0]["year"])
         + "-"
@@ -509,6 +496,7 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
     week_start = datetime.datetime.strptime(week_start, "%Y-%m-%d %H:%M")
     week_end = datetime.datetime.strptime(week_end, "%Y-%m-%d %H:%M")
 
+    circular_counter = 0
     for event in result:
         start_t = datetime.datetime.fromtimestamp(event["start_date"])
         end_t = datetime.datetime.fromtimestamp(event["end_date"])
@@ -516,6 +504,9 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
         event["end_date"] = end_t.strftime("%Y-%m-%d")
         event["start_time"] = start_t.strftime("%H:%M")
         event["end_time"] = end_t.strftime("%H:%M")
+        event["color"] = color_list[circular_counter]
+        circular_counter += 1
+        circular_counter = circular_counter % len(color_list)
         visit = "true"
         while start_t <= end_t:
             if start_t >= week_start and start_t <= week_end:
@@ -523,13 +514,9 @@ def fill_mat(my_cals, week_info, selected_cals, claims):
                 clock = start_t.strftime("%H:%M")
                 event["vis"] = visit
                 event_mat[clock][weekday]["event_list"].append(event.copy())
-                event_mat[clock][weekday]["color"] = color_list[
-                    len(event_mat[clock][weekday]["event_list"]) - 1
-                ]
             visit = "false"
             start_t += datetime.timedelta(minutes=30)
 
-    # print(event_mat)
     return event_mat
 
 
@@ -683,8 +670,6 @@ def root():
 
     week_info, selected_date, today, dominant_month = get_and_set_cal_week()
 
-    print(my_cals )
-    print(selected_cals)
     event_mat = fill_mat(my_cals, week_info, list(selected_cals.keys()), claims)
 
     userinfo = query_result("name", "=", claims, "user")[0]
