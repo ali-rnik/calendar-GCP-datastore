@@ -1,0 +1,6 @@
+indexes:
+  - kind: event
+    properties:
+      - name: cal
+      - name: user
+      - name: creator

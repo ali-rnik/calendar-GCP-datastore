@@ -23,7 +23,7 @@
                             <div>End Date: {{ event["end_date"] }}</div>
                             <div>End Time: {{ event["end_time"] }}</div>
                             <div>Notes: {{ event["notes"] }}</div>
-                            <a href="/stop_sharing_event/{{ event["name"] }}/{{ event["cal"] }}/{{claims}}">click here to discard sharing</a>
+                            <a href="/stop_sharing_event/{{ event["name"] }}/{{ event["cal"] }}/{{ claims }}">click here to discard sharing</a>
                         </form>
                     {% else %}
                         <form id="sa_{{ event["name"] }}" method="get" action="/" hidden="true">
@@ -70,17 +70,11 @@
                                         name="start_time"
                                         class="form-select form-select-sm mb-3">
                                     <option value="{{ event["start_time"] }}">{{ event["start_time"] }}</option>
-                                    {% for hour in hours %}
-                                        <option value="{{ hour }}">
-                                            {{ hour }}
-                                        </option>
-                                    {% endfor %}
+                                    {% for hour in hours %}<option value="{{ hour }}">{{ hour }}</option>{% endfor %}
                                 </select>
                             </div>
                             <div class="mb-3 input-group input-group-sm">
-                                <label for="name" class="form-label">
-                                    End Date:
-                                </label>
+                                <label for="name" class="form-label">End Date:</label>
                                 <input type="date"
                                        class="form-control "
                                        id="end_date"
@@ -127,7 +121,10 @@
                                                class="form-check-input"
                                                id="user---{{ loop.index }}"
                                                value="{{ user }}"
-                                               name="user---{{ loop.index }}">
+                                               name="user---{{ loop.index }}"
+                                               {% if will_share %} {% for u in will_share %} {% if user == u %}checked{% endif %}
+                                               {% endfor %}
+                                               {% endif %}>
                                         <label class="form-check-label" for="user---{{ loop.index }}">
                                             {{ user }}
                                         </label>

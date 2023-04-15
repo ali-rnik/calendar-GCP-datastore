@@ -38,12 +38,6 @@ function makeVis() {
 	document.getElementById("popup-firebase").hidden = true;
 }
 
-function snackbar() {
-	var x = document.getElementById("snackbar");
-	x.className = "show";
-	setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
-}
-
 function makeAllInvisExcept(this_event) {
 	console.log("Making Invisssssssss")
 	var inputs = document.getElementsByTagName("FORM");
