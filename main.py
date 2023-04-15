@@ -111,7 +111,7 @@ def retrieve_row(kind, name):
     return result.copy()
 
 
-def create_cal_for_user(user, calname, shared_list):
+def create_cal_for_user(user, calname):
     if retrieve_row("cal", user + "_._" + calname) != None:
         print("error! calendar exists!")
         return False
@@ -270,7 +270,7 @@ def projection_on(kind, prop):
     return prop_list
 
 
-def add_calendar(claims):
+def add_or_edit_calendar(claims):
     calname = request.args.get("calname")
     if calname == None:
         return False
@@ -355,7 +355,7 @@ def add_calendar(claims):
     )
 
 
-def add_event(claims):
+def add_or_edit_event(claims):
     event_name = request.args.get("event_name")
     start_date = request.args.get("start_date")
     start_time = request.args.get("start_time")
@@ -580,7 +580,7 @@ def delete_event(claims):
         return
 
     if request.args.get("user") != claims:
-        flash("You are not the creator of event but you can Unsubscribe!")
+        flash("You are not the creator of event!")
         return
 
     query = datastore_client.query(kind="event")
@@ -678,9 +678,8 @@ def root():
 
     user_list = projection_on("user", "name")
 
-    add_calendar(claims)
-    #TODO CHANGE WILL_SHARE METHOD TO MORE RELIABLE METHOD
-    will_share = add_event(claims)
+    add_or_edit_calendar(claims)
+    will_share = add_or_edit_event(claims)
     my_cals, selected_cals = get_my_cals(claims)
 
     week_info, selected_date, today, dominant_month = get_and_set_cal_week()
@@ -696,7 +695,6 @@ def root():
         dominant_month=dominant_month,
         claims=claims,
         is_logged_in=True,
-        pagename="Homepage",
         my_cals=my_cals,
         user_list=user_list,
         userinfo=userinfo,
