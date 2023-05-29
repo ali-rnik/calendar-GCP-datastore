@@ -125,7 +125,7 @@ def add_user_if_not_added(claims):
     if retrieve_row("user", claims) != None:
         return
     create_row_from_data("user", claims, {"name": claims, "shared_me": {}})
-    if create_cal_for_user(claims, "personalCalendar", "") != True:
+    if create_cal_for_user(claims, "personalCalendar") != True:
         print("error ! cannot create personal calendar")
     return
 
